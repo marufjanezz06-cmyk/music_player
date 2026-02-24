@@ -626,7 +626,7 @@
     </div>
   </div>
 
-  <input type="file" id="fileInput" accept="audio/*" multiple hidden />
+  <input type="file" id="fileInput" multiple hidden />
   <audio id="audio" preload="metadata"></audio>
 
 <script>
@@ -1468,7 +1468,14 @@
   // ===== import / relink =====
   function importFiles(files, mode){
     // mode: "import" adds new tracks; "relink" tries to match existing
-    const fileArr = Array.from(files || []);
+    let fileArr = Array.from(files || []);
+fileArr = fileArr.filter(f => {
+  const n = (f.name || "").toLowerCase();
+  const isAudioByType = (f.type || "").startsWith("audio/");
+  const isAudioByExt = /\.(mp3|m4a|aac|wav|ogg|flac)$/i.test(n);
+  return isAudioByType || isAudioByExt;
+});
+if (!fileArr.length) return;
     if(!fileArr.length) return;
 
     // build map from signature to file
