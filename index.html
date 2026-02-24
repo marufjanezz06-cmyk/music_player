@@ -2,1891 +2,2784 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Local Music Player</title>
-  <meta name="theme-color" content="#0b0f14"/>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0b0f" />
+  <title>Mini Music — iOS-first Player</title>
   <style>
     :root{
-      --bg:#0b0f14;
-      --panel:#101827;
-      --panel2:#0f1624;
-      --text:#e9eef5;
-      --muted:rgba(233,238,245,.72);
-      --border:#213047;
-      --border2:#2c3f5c;
-      --accent:#5aa7ff;
-      --good:#41d3a2;
-      --warn:#ffcf5a;
-      --bad:#ff6b6b;
-      --shadow: 0 10px 30px rgba(0,0,0,.35);
-      --radius:16px;
-      --radius2:22px;
-      --font: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      --bg:#0b0b0f;
+      --panel:#12121a;
+      --card:#171725;
+      --card2:#1c1c2c;
+      --text:#f3f4ff;
+      --muted:rgba(243,244,255,.65);
+      --muted2:rgba(243,244,255,.45);
+      --line:rgba(255,255,255,.08);
+      --accent:#6ee7ff;
+      --accent2:#a78bfa;
+      --danger:#ff5c7a;
+      --good:#3ddc97;
+
+      --r:18px;
+      --tap:52px;
+
+      --safeB: env(safe-area-inset-bottom);
+      --safeT: env(safe-area-inset-top);
     }
     [data-theme="light"]{
-      --bg:#f5f7fb;
+      --bg:#f6f6fb;
       --panel:#ffffff;
-      --panel2:#f0f4fb;
-      --text:#0b1220;
-      --muted:rgba(11,18,32,.66);
-      --border:#d9e2f0;
-      --border2:#c9d6ea;
-      --accent:#1f7aff;
-      --shadow: 0 10px 25px rgba(15,25,40,.12);
+      --card:#ffffff;
+      --card2:#ffffff;
+      --text:#0c0f18;
+      --muted:rgba(12,15,24,.65);
+      --muted2:rgba(12,15,24,.45);
+      --line:rgba(12,15,24,.10);
+      --accent:#007aff;
+      --accent2:#7c3aed;
+      --danger:#e11d48;
+      --good:#059669;
+      color-scheme: light;
     }
 
-    *{ box-sizing:border-box; }
-    html,body{ height:100%; }
+    *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+    html,body{height:100%;}
     body{
       margin:0;
-      font-family:var(--font);
-      background: radial-gradient(1200px 900px at 15% -10%, rgba(90,167,255,.18), transparent 60%),
-                  radial-gradient(1000px 700px at 95% 10%, rgba(65,211,162,.12), transparent 55%),
+      font-family: ui-sans-serif, -apple-system, system-ui, Segoe UI, Roboto, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background: radial-gradient(1200px 1200px at 20% 0%, rgba(167,139,250,.22), transparent 50%),
+                  radial-gradient(900px 900px at 90% 10%, rgba(110,231,255,.18), transparent 55%),
                   var(--bg);
       color:var(--text);
+      overflow:hidden;
     }
 
+    /* iPhone-first canvas */
     .app{
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 18px 14px 24px;
-      min-height: 100%;
+      height:100%;
+      display:flex;
+      flex-direction:column;
     }
 
     .topbar{
+      padding: calc(10px + var(--safeT)) 16px 10px;
       display:flex;
       align-items:center;
       justify-content:space-between;
       gap:12px;
-      margin-bottom: 14px;
     }
     .brand{
       display:flex; align-items:center; gap:10px;
+      font-weight:700; letter-spacing:.2px;
     }
-    .logo{
-      width:42px; height:42px;
-      border-radius: 14px;
-      background: linear-gradient(135deg, rgba(90,167,255,.95), rgba(65,211,162,.9));
-      box-shadow: var(--shadow);
-      display:grid; place-items:center;
-      font-weight:900;
-      color:#07101b;
-      user-select:none;
+    .brand .dot{
+      width:10px; height:10px; border-radius:99px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      box-shadow: 0 0 0 4px rgba(110,231,255,.12);
     }
-    .brand h1{
-      font-size: 16px;
-      margin:0;
-      line-height:1.2;
-      letter-spacing:.2px;
-    }
-    .brand .sub{
-      font-size:12px;
-      color:var(--muted);
-      margin-top:2px;
-    }
-
-    .actions{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      flex-wrap:wrap;
-      justify-content:flex-end;
-    }
-
-    .grid{
-      display:grid;
-      grid-template-columns: 380px 1fr;
-      gap:14px;
-    }
-    @media (max-width: 980px){
-      .grid{ grid-template-columns: 1fr; }
-    }
-
-    .card{
-      background: linear-gradient(180deg, rgba(255,255,255,.02), transparent 40%), var(--panel);
-      border: 1px solid var(--border);
-      border-radius: var(--radius2);
-      box-shadow: var(--shadow);
-      overflow:hidden;
-    }
-    .cardHeader{
-      padding: 14px 14px 10px;
-      border-bottom: 1px solid var(--border);
-      display:flex; align-items:center; justify-content:space-between; gap:10px;
-    }
-    .cardTitle{
-      font-size: 13px;
-      font-weight: 800;
-      letter-spacing:.35px;
-      text-transform: uppercase;
-      color: var(--muted);
-    }
-
-    .btn{
-      appearance:none;
-      border:1px solid var(--border2);
-      background: linear-gradient(180deg, rgba(255,255,255,.04), transparent 55%), var(--panel2);
-      color: var(--text);
-      padding: 10px 12px;
-      border-radius: 14px;
-      cursor:pointer;
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      font-weight:700;
-      font-size: 13px;
-      user-select:none;
-      transition: transform .08s ease, border-color .12s ease, filter .12s ease;
-    }
-    .btn:hover{ border-color: var(--accent); }
-    .btn:active{ transform: translateY(1px); filter: brightness(.97); }
-    .btn.primary{
-      border-color: rgba(90,167,255,.55);
-      background: linear-gradient(180deg, rgba(90,167,255,.25), transparent 60%), var(--panel2);
-    }
-    .btn.danger{
-      border-color: rgba(255,107,107,.55);
-      background: linear-gradient(180deg, rgba(255,107,107,.18), transparent 60%), var(--panel2);
-    }
-    .btn.small{ padding:8px 10px; border-radius: 12px; font-size:12px; }
-    .btn.icon{ width:42px; justify-content:center; }
-    .pill{
-      padding:6px 10px;
+    .chip{
+      font-size:12px; padding:7px 10px;
+      border:1px solid var(--line);
       border-radius:999px;
-      border:1px solid var(--border2);
-      color: var(--muted);
-      font-size:12px;
-      white-space:nowrap;
+      background: rgba(255,255,255,.04);
+      color:var(--muted);
     }
 
-    .content{ padding: 12px 14px 14px; }
-
-    .row{ display:flex; gap:10px; flex-wrap:wrap; }
-    .row.tight{ gap:8px; }
-    .grow{ flex:1; min-width: 160px; }
-
-    .field{
-      display:flex; flex-direction:column; gap:6px;
-      min-width: 160px;
-    }
-    label{
-      font-size: 12px;
-      color: var(--muted);
-      font-weight:700;
-    }
-    input[type="text"], select{
-      width:100%;
-      border: 1px solid var(--border2);
-      border-radius: 14px;
-      padding: 10px 12px;
-      background: var(--panel2);
-      color: var(--text);
-      outline:none;
-      font-size: 14px;
-    }
-    input[type="text"]::placeholder{ color: rgba(233,238,245,.45); }
-    [data-theme="light"] input[type="text"]::placeholder{ color: rgba(11,18,32,.35); }
-    input[type="range"]{
-      width:100%;
-      accent-color: var(--accent);
-    }
-
-    .split{
-      display:grid;
-      grid-template-columns: 1fr;
-      gap:12px;
-    }
-
-    /* Library list */
-    .list{
-      margin-top: 12px;
-      display:flex;
-      flex-direction:column;
-      gap:8px;
-      max-height: 520px;
-      overflow:auto;
-      padding-right:4px;
-    }
-    .list::-webkit-scrollbar{ width: 10px; }
-    .list::-webkit-scrollbar-thumb{
-      background: rgba(90,167,255,.18);
-      border: 2px solid transparent;
-      background-clip: padding-box;
-      border-radius: 999px;
-    }
-
-    .track{
-      border: 1px solid var(--border);
-      background: var(--panel2);
-      border-radius: 16px;
-      padding: 10px 10px;
-      display:flex;
-      align-items:center;
-      gap:10px;
-      cursor:pointer;
-      transition: border-color .12s ease, transform .08s ease, filter .12s ease;
-    }
-    .track:hover{ border-color: var(--accent); }
-    .track:active{ transform: translateY(1px); filter: brightness(.98); }
-    .track.active{
-      border-color: rgba(90,167,255,.85);
-      box-shadow: 0 0 0 3px rgba(90,167,255,.18);
-    }
-    .tIcon{
-      width:38px; height:38px;
-      border-radius: 14px;
-      border:1px solid var(--border);
-      display:grid; place-items:center;
-      background: linear-gradient(180deg, rgba(255,255,255,.04), transparent 60%), var(--panel);
-      user-select:none;
-      flex: 0 0 auto;
-    }
-    .tMeta{ flex:1; min-width: 0; }
-    .tTitle{
-      font-weight:900;
-      font-size: 13.5px;
-      line-height: 1.2;
-      white-space: nowrap;
-      overflow:hidden;
-      text-overflow: ellipsis;
-    }
-    .tSub{
-      margin-top: 3px;
-      font-size: 12px;
-      color: var(--muted);
-      display:flex;
-      gap:8px;
-      align-items:center;
-      flex-wrap:wrap;
-    }
-    .badge{
-      font-size: 11px;
-      padding: 4px 8px;
-      border-radius: 999px;
-      border:1px solid var(--border2);
-      color: var(--muted);
-    }
-    .badge.good{ border-color: rgba(65,211,162,.55); color: rgba(65,211,162,.95); }
-    .badge.warn{ border-color: rgba(255,207,90,.55); color: rgba(255,207,90,.95); }
-    .badge.bad{ border-color: rgba(255,107,107,.55); color: rgba(255,107,107,.95); }
-    .tBtns{ display:flex; gap:8px; }
-
-    /* Player */
-    .now{
-      padding: 16px 14px;
-      border-bottom: 1px solid var(--border);
-      background:
-        radial-gradient(600px 240px at 15% 0%, rgba(90,167,255,.17), transparent 60%),
-        radial-gradient(450px 240px at 90% 0%, rgba(65,211,162,.12), transparent 55%),
-        transparent;
-    }
-    .nowTop{
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap:12px;
-    }
-    .nowTitle{
-      font-size: 18px;
-      font-weight: 950;
-      line-height:1.15;
-      margin:0;
-      letter-spacing:.2px;
-      word-break: break-word;
-    }
-    .nowSub{
-      margin-top:6px;
-      color: var(--muted);
-      font-size: 13px;
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-      align-items:center;
-    }
-    .controls{
-      padding: 14px 14px 12px;
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-    }
-    .ctrlRow{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      flex-wrap:wrap;
-    }
-    .time{
-      font-variant-numeric: tabular-nums;
-      color: var(--muted);
-      font-size: 12px;
-      min-width: 56px;
-      text-align:center;
-    }
-    .centerCtrls{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      justify-content:center;
+    .content{
+      position:relative;
       flex:1;
+      overflow:hidden;
     }
-
-    .hint{
-      padding: 10px 14px 14px;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.45;
-      border-top: 1px dashed rgba(44,63,92,.7);
-    }
-
-    /* Queue */
-    .queueWrap{
-      padding: 12px 14px 14px;
-      border-top: 1px solid var(--border);
-    }
-    .queueHeader{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      margin-bottom:10px;
-    }
-    .queue{
-      display:flex;
-      flex-direction:column;
-      gap:8px;
-      max-height: 300px;
+    .screens{
+      position:absolute; inset:0;
       overflow:auto;
-      padding-right:4px;
+      padding: 0 14px calc(160px + var(--safeB)) 14px; /* space for mini player + tabbar */
+      -webkit-overflow-scrolling: touch;
     }
-    .qItem{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      padding: 10px;
-      border-radius: 16px;
-      border: 1px solid var(--border);
-      background: var(--panel2);
-    }
-    .qDrag{
-      width:34px; height:34px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      background: linear-gradient(180deg, rgba(255,255,255,.04), transparent 60%), var(--panel);
-      display:grid; place-items:center;
-      cursor: grab;
-      user-select:none;
-      flex: 0 0 auto;
-    }
-    .qText{ flex:1; min-width:0; }
-    .qName{
-      font-size: 13px;
-      font-weight: 900;
-      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-    }
-    .qSmall{
-      margin-top: 3px;
-      font-size: 12px;
-      color: var(--muted);
-      display:flex; gap:8px; flex-wrap:wrap;
-    }
-    .qBtns{ display:flex; gap:8px; }
+    .screen{display:none; padding-bottom:16px;}
+    .screen.active{display:block;}
 
-    .kbd{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      padding: 2px 6px;
-      border-radius: 8px;
-      border: 1px solid var(--border2);
-      background: rgba(255,255,255,.03);
-      font-size: 11px;
-      color: var(--muted);
-      font-weight: 800;
-      margin: 0 2px;
-    }
-
-    .toast{
-      position: fixed;
-      left: 50%;
-      bottom: 18px;
-      transform: translateX(-50%);
-      background: rgba(20,28,42,.92);
-      border: 1px solid rgba(90,167,255,.35);
-      color: #e9eef5;
-      padding: 10px 12px;
-      border-radius: 14px;
-      box-shadow: var(--shadow);
-      display:none;
-      gap:10px;
-      align-items:center;
-      max-width: calc(100vw - 20px);
-      z-index: 50;
+    .section{
+      margin-top:10px;
+      padding:14px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      border-radius: var(--r);
       backdrop-filter: blur(10px);
     }
-    [data-theme="light"] .toast{
-      background: rgba(255,255,255,.92);
-      color: #0b1220;
-      border-color: rgba(31,122,255,.35);
+    .row{display:flex; gap:12px; align-items:center; justify-content:space-between;}
+    .row.wrap{flex-wrap:wrap; align-items:flex-start;}
+    .title{
+      font-size:14px; font-weight:700; color:var(--text);
     }
-    .toast.show{ display:flex; }
+    .sub{font-size:12px; color:var(--muted);}
+    .hint{font-size:12px; color:var(--muted); line-height:1.35;}
+    .hint b{color:var(--text);}
+    .hr{height:1px; background:var(--line); margin:12px 0;}
 
-    .modalBack{
-      position: fixed; inset:0;
-      background: rgba(0,0,0,.45);
-      display:none;
+    .btn{
+      min-height: var(--tap);
+      padding: 12px 14px;
+      border-radius: 14px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      font-weight:650;
+      display:inline-flex;
       align-items:center;
       justify-content:center;
-      padding: 16px;
-      z-index: 60;
+      gap:10px;
+      user-select:none;
+      touch-action: manipulation;
     }
-    .modalBack.show{ display:flex; }
-    .modal{
-      width: min(560px, 100%);
-      border-radius: 20px;
-      border: 1px solid var(--border);
-      background: var(--panel);
-      box-shadow: var(--shadow);
+    .btn:active{transform: scale(.99);}
+    .btn.primary{
+      border-color: rgba(110,231,255,.25);
+      background: linear-gradient(135deg, rgba(110,231,255,.20), rgba(167,139,250,.18));
+    }
+    .btn.danger{
+      border-color: rgba(255,92,122,.28);
+      background: rgba(255,92,122,.10);
+      color: var(--text);
+    }
+    .btn.ghost{
+      background: transparent;
+    }
+    .btn.small{
+      min-height: 42px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 650;
+    }
+    .btn.icon{
+      width: var(--tap);
+      padding:0;
+    }
+
+    .input, .select{
+      width:100%;
+      min-height: var(--tap);
+      padding: 12px 12px;
+      border-radius: 14px;
+      border:1px solid var(--line);
+      background: rgba(0,0,0,.12);
+      color: var(--text);
+      outline: none;
+    }
+    [data-theme="light"] .input, [data-theme="light"] .select{
+      background: rgba(12,15,24,.04);
+    }
+    .input::placeholder{color: var(--muted2);}
+
+    .pillbar{
+      display:flex; gap:8px; flex-wrap:wrap;
+    }
+    .pill{
+      padding:9px 12px;
+      border-radius: 999px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.05);
+      font-size: 12px;
+      color: var(--muted);
+      user-select:none;
+    }
+    .pill.active{
+      color: var(--text);
+      border-color: rgba(110,231,255,.35);
+      background: rgba(110,231,255,.12);
+    }
+
+    /* Track cards */
+    .tracks{
+      margin-top:12px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .track{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      padding:12px;
+      border-radius: 16px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      user-select:none;
+      touch-action: manipulation;
+    }
+    .track:active{transform: scale(.995);}
+    .cover{
+      width:52px; height:52px; border-radius: 14px;
+      flex:0 0 auto;
+      display:grid; place-items:center;
+      background: linear-gradient(135deg, rgba(110,231,255,.22), rgba(167,139,250,.22));
+      border:1px solid rgba(255,255,255,.10);
       overflow:hidden;
     }
+    .cover img{width:100%; height:100%; object-fit:cover; display:block;}
+    .cover .note{
+      width:22px; height:22px;
+      opacity:.9;
+    }
+    .tmeta{flex:1; min-width:0;}
+    .tname{
+      font-weight:750;
+      font-size:14px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .tauthor{
+      margin-top:2px;
+      font-size:12px;
+      color:var(--muted);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .badge{
+      font-size:11px;
+      padding:6px 8px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      color:var(--muted);
+      background: rgba(255,255,255,.03);
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+    }
+    .badge.missing{border-color: rgba(255,92,122,.22); color: rgba(255,92,122,.95); background: rgba(255,92,122,.08);}
+    .badge.fav{border-color: rgba(110,231,255,.22); color: var(--text); background: rgba(110,231,255,.10);}
+    .actions{
+      display:flex; gap:8px; align-items:center;
+      flex:0 0 auto;
+    }
+
+    /* Bottom tab bar */
+    .tabbar{
+      position:fixed;
+      left:0; right:0;
+      bottom:0;
+      padding: 8px 12px calc(8px + var(--safeB));
+      background: rgba(10,10,16,.72);
+      border-top:1px solid var(--line);
+      backdrop-filter: blur(18px);
+      display:flex;
+      justify-content:space-around;
+      gap:10px;
+      z-index: 30;
+    }
+    [data-theme="light"] .tabbar{background: rgba(255,255,255,.78);}
+    .tab{
+      flex:1;
+      height: 54px;
+      border-radius: 16px;
+      border:1px solid transparent;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:4px;
+      color: var(--muted);
+      user-select:none;
+      touch-action: manipulation;
+    }
+    .tab.active{
+      color: var(--text);
+      border-color: rgba(110,231,255,.28);
+      background: rgba(110,231,255,.10);
+    }
+    .tab svg{opacity:.9;}
+    .tab span{font-size:11px; font-weight:650;}
+
+    /* Mini player */
+    .mini{
+      position:fixed;
+      left:12px; right:12px;
+      bottom: calc(74px + var(--safeB));
+      z-index: 40;
+      border-radius: 20px;
+      border:1px solid var(--line);
+      background: rgba(16,16,26,.70);
+      backdrop-filter: blur(22px);
+      display:flex;
+      align-items:center;
+      gap:12px;
+      padding:10px;
+      box-shadow: 0 12px 30px rgba(0,0,0,.25);
+      user-select:none;
+      touch-action: manipulation;
+    }
+    [data-theme="light"] .mini{background: rgba(255,255,255,.78);}
+    .mini.hidden{display:none;}
+    .mini .cover{width:44px;height:44px;border-radius:14px;}
+    .mini .tname{font-size:13px;}
+    .mini .tauthor{font-size:11px;}
+    .mini .actions .btn.icon{width:46px; height:46px; border-radius:16px;}
+
+    /* Full Player sheet */
+    .sheetOverlay{
+      position:fixed; inset:0;
+      background: rgba(0,0,0,.42);
+      backdrop-filter: blur(3px);
+      display:none;
+      z-index: 60;
+    }
+    .sheetOverlay.show{display:block;}
+    .sheet{
+      position:absolute;
+      left:0; right:0;
+      bottom:0;
+      border-top-left-radius: 26px;
+      border-top-right-radius: 26px;
+      border:1px solid var(--line);
+      border-bottom: none;
+      background: rgba(16,16,26,.92);
+      backdrop-filter: blur(22px);
+      transform: translateY(12px);
+      animation: sheetIn .18s ease-out forwards;
+      max-height: calc(100% - var(--safeT) - 12px);
+      overflow:hidden;
+    }
+    [data-theme="light"] .sheet{background: rgba(255,255,255,.92);}
+    @keyframes sheetIn{
+      from{transform: translateY(40px); opacity:.9;}
+      to{transform: translateY(0); opacity:1;}
+    }
+    .sheetHeader{
+      padding: 10px 14px 8px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      border-bottom:1px solid var(--line);
+    }
+    .grab{
+      width:44px; height:5px; border-radius: 99px;
+      background: rgba(255,255,255,.25);
+      margin: 6px auto 0;
+    }
+    [data-theme="light"] .grab{background: rgba(12,15,24,.18);}
+    .sheetBody{
+      overflow:auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 10px 14px calc(18px + var(--safeB)) 14px;
+    }
+
+    .bigCover{
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      max-height: 380px;
+      border-radius: 22px;
+      border: 1px solid var(--line);
+      overflow:hidden;
+      background: linear-gradient(135deg, rgba(110,231,255,.22), rgba(167,139,250,.22));
+      display:grid; place-items:center;
+      margin-top:10px;
+    }
+    .bigCover img{width:100%; height:100%; object-fit:cover; display:block;}
+    .bigTitle{
+      margin-top:14px;
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing:.2px;
+      overflow:hidden;
+      white-space:nowrap;
+      text-overflow:ellipsis;
+    }
+    .bigAuthor{
+      margin-top:4px;
+      font-size: 13px;
+      color: var(--muted);
+      overflow:hidden;
+      white-space:nowrap;
+      text-overflow:ellipsis;
+    }
+
+    .progressWrap{margin-top:14px;}
+    .timeRow{display:flex; justify-content:space-between; color:var(--muted); font-size:12px; margin-top:8px;}
+    input[type="range"]{
+      width:100%;
+      height: 34px;
+      background: transparent;
+      margin: 0;
+      padding: 0;
+      touch-action: pan-x;
+    }
+    input[type="range"]::-webkit-slider-runnable-track{
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.16);
+    }
+    [data-theme="light"] input[type="range"]::-webkit-slider-runnable-track{background: rgba(12,15,24,.12);}
+    input[type="range"]::-webkit-slider-thumb{
+      -webkit-appearance: none;
+      width: 22px; height: 22px;
+      margin-top: -8px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: 1px solid rgba(255,255,255,.25);
+      box-shadow: 0 8px 18px rgba(0,0,0,.20);
+    }
+
+    .transport{
+      margin-top: 14px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:12px;
+    }
+    .transport .btn.icon{
+      width:60px; height:60px;
+      border-radius: 20px;
+    }
+    .transport .btn.icon.primary{
+      width:74px; height:74px;
+      border-radius: 24px;
+      font-size: 15px;
+    }
+
+    .modes{
+      margin-top: 12px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .modeBtn{
+      flex:1;
+      min-width: 110px;
+    }
+
+    .queuePanel{
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 18px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.04);
+    }
+    .queueHeader{
+      display:flex; justify-content:space-between; align-items:center; gap:10px;
+      margin-bottom:10px;
+    }
+    .queueList{display:flex; flex-direction:column; gap:8px;}
+    .queueItem{
+      display:flex; gap:10px; align-items:center;
+      padding:10px;
+      border-radius: 14px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.03);
+    }
+    .queueItem .qmeta{flex:1; min-width:0;}
+    .queueItem .qname{font-size:13px; font-weight:750; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+    .queueItem .qauth{font-size:11px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+    .queueItem .qbtns{display:flex; gap:6px;}
+
+    .toast{
+      position:fixed;
+      left:12px; right:12px;
+      top: calc(12px + var(--safeT));
+      z-index: 100;
+      padding: 12px 14px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: rgba(16,16,26,.86);
+      backdrop-filter: blur(16px);
+      color: var(--text);
+      display:none;
+      box-shadow: 0 12px 30px rgba(0,0,0,.25);
+    }
+    [data-theme="light"] .toast{background: rgba(255,255,255,.90);}
+    .toast.show{display:block; animation: toastIn .18s ease-out forwards;}
+    @keyframes toastIn{
+      from{transform: translateY(-8px); opacity:.7;}
+      to{transform: translateY(0); opacity:1;}
+    }
+
+    .modalOverlay{
+      position:fixed; inset:0;
+      background: rgba(0,0,0,.42);
+      backdrop-filter: blur(3px);
+      display:none;
+      z-index: 80;
+    }
+    .modalOverlay.show{display:block;}
+    .modal{
+      position:absolute;
+      left:12px; right:12px;
+      top: calc(12px + var(--safeT));
+      border-radius: 20px;
+      border:1px solid var(--line);
+      background: rgba(16,16,26,.92);
+      backdrop-filter: blur(20px);
+      overflow:hidden;
+    }
+    [data-theme="light"] .modal{background: rgba(255,255,255,.92);}
     .modalHead{
-      padding: 14px 14px 10px;
-      border-bottom: 1px solid var(--border);
+      padding: 12px 14px;
+      border-bottom:1px solid var(--line);
       display:flex; justify-content:space-between; align-items:center; gap:10px;
     }
-    .modalHead h3{
-      margin:0;
-      font-size: 14px;
-      font-weight: 950;
-    }
-    .modalBody{ padding: 12px 14px 14px; }
-    .modalFoot{
-      padding: 12px 14px 14px;
-      border-top: 1px solid var(--border);
-      display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap;
+    .modalBody{padding: 12px 14px 14px;}
+    .grid2{display:grid; grid-template-columns: 1fr 1fr; gap:10px;}
+    .muted{color:var(--muted); font-size:12px; line-height:1.35;}
+    .kbd{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12px;
+      padding: 2px 6px;
+      border:1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255,255,255,.05);
+      color: var(--text);
     }
   </style>
 </head>
-
-<body data-theme="dark">
-  <div class="app">
+<body>
+  <div class="app" id="app" data-theme="dark">
     <div class="topbar">
       <div class="brand">
-        <div class="logo">♫</div>
+        <div class="dot"></div>
         <div>
-          <h1 id="ui_appTitle">Local Music Player</h1>
-          <div class="sub" id="ui_appSub">Safari-friendly • One-file app • GitHub Pages</div>
+          <div style="font-size:14px">Mini Music</div>
+          <div class="sub" id="topSub">iOS-first • Offline library</div>
         </div>
       </div>
-
-      <div class="actions">
-        <button class="btn primary" id="btnImport">⬆️ <span id="ui_import">Import</span></button>
-        <button class="btn" id="btnRelink">🔁 <span id="ui_relink">Relink</span></button>
-        <span class="pill" id="ui_counter">0 tracks</span>
-        <button class="btn icon" id="btnTheme" title="Theme">🌓</button>
-        <button class="btn icon" id="btnLang" title="Language">RU</button>
-      </div>
+      <div class="chip" id="nowChip">—</div>
     </div>
 
-    <div class="grid">
-      <!-- LEFT: Library -->
-      <div class="card">
-        <div class="cardHeader">
-          <div class="cardTitle" id="ui_library">Library</div>
-          <div class="row tight">
-            <button class="btn small" id="btnNewPlaylist">＋ <span id="ui_playlist">Playlist</span></button>
-            <button class="btn small danger" id="btnClear">🗑 <span id="ui_clear">Clear</span></button>
-          </div>
-        </div>
+    <div class="content">
+      <div class="screens" id="screens">
 
-        <div class="content">
-          <div class="row">
-            <div class="field grow">
-              <label id="ui_searchLabel">Search</label>
-              <input type="text" id="search" placeholder="Search by name..." />
-            </div>
-
-            <div class="field">
-              <label id="ui_sortLabel">Sort</label>
-              <select id="sort">
-                <option value="added_desc" id="ui_sortAddedDesc">Added ↓</option>
-                <option value="added_asc" id="ui_sortAddedAsc">Added ↑</option>
-                <option value="az" id="ui_sortAZ">A → Z</option>
-                <option value="za" id="ui_sortZA">Z → A</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="row">
-            <div class="field grow">
-              <label id="ui_filterLabel">Filter</label>
-              <select id="filter">
-                <option value="all" id="ui_filterAll">All</option>
-                <option value="favorites" id="ui_filterFav">Favorites</option>
-                <option value="missing" id="ui_filterMissing">Missing files</option>
-              </select>
-            </div>
-
-            <div class="field grow">
-              <label id="ui_categoryLabel">Category</label>
-              <select id="category">
-                <option value="all" id="ui_categoryAll">All categories</option>
-              </select>
-            </div>
-
-            <div class="field">
-              <label>&nbsp;</label>
-              <button class="btn" id="btnNewCategory">＋ <span id="ui_newCategory">Category</span></button>
-            </div>
-          </div>
-
-          <div class="list" id="libraryList"></div>
-        </div>
-      </div>
-
-      <!-- RIGHT: Player + Queue -->
-      <div class="card">
-        <div class="now">
-          <div class="nowTop">
-            <div>
-              <h2 class="nowTitle" id="nowTitle">—</h2>
-              <div class="nowSub" id="nowSub">
-                <span class="badge" id="nowCat">—</span>
-                <span class="badge" id="nowStatus">Idle</span>
+        <!-- LIBRARY -->
+        <div class="screen active" id="screen-library">
+          <div class="section">
+            <div class="row wrap" style="gap:10px">
+              <div style="flex:1; min-width:220px">
+                <div class="title" id="libTitle">Library</div>
+                <div class="sub" id="libSub">Import your music files (local). After refresh you must relink.</div>
+              </div>
+              <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end">
+                <label class="btn primary" for="fileInput" id="importBtn">⬇️ Import</label>
+                <input id="fileInput" type="file" accept=".mp3,.m4a,.aac,.wav,.ogg,.flac,audio/*" multiple hidden />
+                <button class="btn" id="relinkBtn">🔗 Relink</button>
               </div>
             </div>
-            <div class="row tight">
-              <button class="btn small" id="btnFav">⭐ <span id="ui_fav">Fav</span></button>
-              <button class="btn small" id="btnAssignCat">🏷 <span id="ui_setCat">Category</span></button>
-              <button class="btn small" id="btnAddToPlaylist">➕ <span id="ui_addToPl">Playlist</span></button>
+
+            <div class="hr"></div>
+
+            <div class="row wrap" style="gap:10px">
+              <div style="flex:1; min-width:220px">
+                <input class="input" id="searchInput" placeholder="Search title / artist…" />
+              </div>
+              <div style="flex:0 0 auto; min-width:160px">
+                <select class="select" id="sortSelect">
+                  <option value="recent">Recent</option>
+                  <option value="title">Title A→Z</option>
+                  <option value="artist">Artist A→Z</option>
+                </select>
+              </div>
             </div>
+
+            <div style="margin-top:10px" class="pillbar" id="filterPills">
+              <div class="pill active" data-filter="all" id="pillAll">All</div>
+              <div class="pill" data-filter="fav" id="pillFav">Favorites</div>
+              <div class="pill" data-filter="missing" id="pillMissing">Missing</div>
+            </div>
+
+            <div class="tracks" id="trackList"></div>
           </div>
         </div>
 
-        <div class="controls">
-          <div class="ctrlRow">
-            <button class="btn icon" id="btnPrev" title="Prev">⏮</button>
-            <button class="btn icon primary" id="btnPlay" title="Play">▶️</button>
-            <button class="btn icon" id="btnNext" title="Next">⏭</button>
-
-            <div class="centerCtrls">
-              <button class="btn small" id="btnShuffle" title="Shuffle">🔀 <span id="ui_shuffle">Shuffle</span></button>
-              <button class="btn small" id="btnRepeat" title="Repeat">🔁 <span id="ui_repeat">Repeat: Off</span></button>
+        <!-- PLAYLISTS -->
+        <div class="screen" id="screen-playlists">
+          <div class="section">
+            <div class="row wrap" style="gap:10px">
+              <div>
+                <div class="title" id="plTitle">Playlists</div>
+                <div class="sub" id="plSub">Create playlists, reorder with ↑/↓.</div>
+              </div>
+              <button class="btn primary" id="createPlaylistBtn">➕ Create</button>
             </div>
-          </div>
 
-          <div class="ctrlRow">
-            <div class="time" id="timeCur">0:00</div>
-            <input type="range" id="seek" min="0" max="1000" value="0" />
-            <div class="time" id="timeDur">0:00</div>
-          </div>
+            <div class="hr"></div>
 
-          <div class="ctrlRow">
-            <button class="btn small" id="btnMute" title="Mute">🔊</button>
-            <input type="range" id="vol" min="0" max="1" step="0.01" value="0.9" style="max-width:260px" />
-            <span class="pill" id="ui_hotkeys">
-              <span class="kbd">Space</span> Play
-              <span class="kbd">←</span><span class="kbd">→</span> Seek
-              <span class="kbd">↑</span><span class="kbd">↓</span> Vol
-              <span class="kbd">N</span>/<span class="kbd">P</span> Next/Prev
-            </span>
+            <div id="playlistViewRoot"></div>
           </div>
         </div>
 
-        <div class="queueWrap">
-          <div class="queueHeader">
-            <div class="cardTitle" id="ui_queue">Queue</div>
-            <div class="row tight">
-              <button class="btn small" id="btnQueueFromFiltered">➕ <span id="ui_queueFromList">From list</span></button>
-              <button class="btn small danger" id="btnQueueClear">🗑 <span id="ui_queueClear">Clear</span></button>
+        <!-- SETTINGS -->
+        <div class="screen" id="screen-settings">
+          <div class="section">
+            <div class="title" id="setTitle">Settings</div>
+            <div class="sub" id="setSub">Theme, language, data, help.</div>
+
+            <div class="hr"></div>
+
+            <div class="row wrap">
+              <div style="flex:1; min-width:220px">
+                <div class="title" id="themeTitle">Theme</div>
+                <div class="sub" id="themeSub">Dark / Light</div>
+              </div>
+              <button class="btn" id="themeToggle">🌙 Dark</button>
+            </div>
+
+            <div class="hr"></div>
+
+            <div class="row wrap">
+              <div style="flex:1; min-width:220px">
+                <div class="title" id="langTitle">Language</div>
+                <div class="sub" id="langSub">RU / EN</div>
+              </div>
+              <button class="btn" id="langToggle">🇷🇺 RU</button>
+            </div>
+
+            <div class="hr"></div>
+
+            <div class="row wrap">
+              <div style="flex:1; min-width:220px">
+                <div class="title" id="dataTitle">Data</div>
+                <div class="sub" id="dataSub">Clear library, playlists, favorites.</div>
+              </div>
+              <button class="btn danger" id="clearDataBtn">🧹 Clear data</button>
+            </div>
+
+            <div class="hr"></div>
+
+            <div class="title" id="helpTitle">Help / iOS notes</div>
+            <div class="hint" id="helpBody" style="margin-top:8px"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Mini Player -->
+    <div class="mini hidden" id="miniPlayer" role="button" aria-label="Open player">
+      <div class="cover" id="miniCover">
+        <svg class="note" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M9 18a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="currentColor" stroke-width="2"/>
+          <path d="M12 15V5l9-2v10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <path d="M18 19a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="currentColor" stroke-width="2"/>
+        </svg>
+      </div>
+      <div class="tmeta">
+        <div class="tname" id="miniTitle">—</div>
+        <div class="tauthor" id="miniArtist">—</div>
+      </div>
+      <div class="actions">
+        <button class="btn icon" id="miniPlayBtn" aria-label="Play/Pause">▶️</button>
+        <button class="btn icon" id="miniNextBtn" aria-label="Next">⏭️</button>
+      </div>
+    </div>
+
+    <!-- Bottom Tab Bar -->
+    <div class="tabbar" id="tabbar">
+      <div class="tab active" data-tab="library" role="button" aria-label="Library tab">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M6 4h12v4H6V4Z" stroke="currentColor" stroke-width="2"/>
+          <path d="M6 10h12v10H6V10Z" stroke="currentColor" stroke-width="2"/>
+        </svg>
+        <span id="tabLibrary">Library</span>
+      </div>
+      <div class="tab" data-tab="playlists" role="button" aria-label="Playlists tab">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M4 7h16M4 12h10M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <span id="tabPlaylists">Playlists</span>
+      </div>
+      <div class="tab" data-tab="settings" role="button" aria-label="Settings tab">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" stroke="currentColor" stroke-width="2"/>
+          <path d="M19.4 15a8.6 8.6 0 0 0 .1-1 8.6 8.6 0 0 0-.1-1l2-1.6-2-3.4-2.4 1a8.8 8.8 0 0 0-1.7-1l-.4-2.6h-4l-.4 2.6a8.8 8.8 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.6a8.6 8.6 0 0 0-.1 1 8.6 8.6 0 0 0 .1 1l-2 1.6 2 3.4 2.4-1a8.8 8.8 0 0 0 1.7 1l.4 2.6h4l.4-2.6a8.8 8.8 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+        </svg>
+        <span id="tabSettings">Settings</span>
+      </div>
+    </div>
+
+    <!-- Full Player Sheet -->
+    <div class="sheetOverlay" id="sheetOverlay" aria-hidden="true">
+      <div class="sheet" id="sheet">
+        <div class="grab"></div>
+        <div class="sheetHeader">
+          <button class="btn small ghost" id="closeSheetBtn">⬇️ <span id="closeTxt">Close</span></button>
+          <div class="chip" id="sheetChip">Player</div>
+          <button class="btn small" id="queueToggleBtn">🧾 <span id="queueTxt">Queue</span></button>
+        </div>
+        <div class="sheetBody">
+          <div class="bigCover" id="bigCover">
+            <svg class="note" style="width:46px;height:46px;opacity:.9" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M9 18a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="currentColor" stroke-width="2"/>
+              <path d="M12 15V5l9-2v10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <path d="M18 19a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="currentColor" stroke-width="2"/>
+            </svg>
+          </div>
+
+          <div class="bigTitle" id="bigTitle">—</div>
+          <div class="bigAuthor" id="bigArtist">—</div>
+
+          <div class="progressWrap">
+            <input type="range" id="seek" min="0" max="1000" value="0" aria-label="Seek" />
+            <div class="timeRow">
+              <div id="tCur">0:00</div>
+              <div id="tDur">0:00</div>
             </div>
           </div>
 
-          <div class="queue" id="queueList"></div>
-        </div>
+          <div class="transport">
+            <button class="btn icon" id="prevBtn" aria-label="Previous">⏮️</button>
+            <button class="btn icon primary" id="playBtn" aria-label="Play/Pause">▶️</button>
+            <button class="btn icon" id="nextBtn" aria-label="Next">⏭️</button>
+          </div>
 
-        <div class="hint" id="ui_hint">
-          Files are local: after page refresh, you must import again (Safari restriction). Your playlists/categories/favorites are saved.
+          <div class="modes">
+            <button class="btn small modeBtn" id="shuffleBtn">🔀 <span id="shuffleTxt">Shuffle</span>: <b id="shuffleState">Off</b></button>
+            <button class="btn small modeBtn" id="repeatBtn">🔁 <span id="repeatTxt">Repeat</span>: <b id="repeatState">Off</b></button>
+            <button class="btn small modeBtn" id="favBtn">⭐ <span id="favTxt">Favorite</span></button>
+          </div>
+
+          <div class="section" style="margin-top:12px">
+            <div class="row wrap" style="gap:10px">
+              <div style="flex:1; min-width:220px">
+                <div class="title" id="volTitle">Audio</div>
+                <div class="sub" id="volSub">iPhone Safari: system volume often only by hardware buttons.</div>
+              </div>
+              <button class="btn small" id="muteBtn">🔇 <span id="muteTxt">Mute</span></button>
+            </div>
+
+            <div class="hr"></div>
+
+            <div class="title" style="font-size:13px" id="gainTitle">Gain (preamp)</div>
+            <div class="sub" id="gainSub">Works via WebAudio (if allowed). Use it as “boost” instead of system volume.</div>
+            <div style="margin-top:8px">
+              <input type="range" id="gain" min="0" max="200" value="100" />
+              <div class="timeRow">
+                <div class="muted" id="gainLeft">0%</div>
+                <div class="muted" id="gainRight">200%</div>
+              </div>
+              <div class="hint" id="volumeHint" style="margin-top:8px"></div>
+            </div>
+          </div>
+
+          <div class="section" style="margin-top:12px">
+            <div class="row wrap" style="gap:10px">
+              <div style="flex:1; min-width:220px">
+                <div class="title" id="metaTitle">Track info</div>
+                <div class="sub" id="metaSub">No ID3 parsing. Title = filename. Edit manually.</div>
+              </div>
+              <button class="btn small" id="editInfoBtn">✏️ <span id="editTxt">Edit info</span></button>
+            </div>
+
+            <div class="hr"></div>
+
+            <div class="row wrap" style="gap:10px">
+              <button class="btn small" id="addToPlaylistBtn">➕ <span id="addPlTxt">Add to playlist</span></button>
+              <button class="btn small" id="assignCatBtn">🏷️ <span id="catTxt">Assign category</span></button>
+            </div>
+          </div>
+
+          <div class="queuePanel" id="queuePanel" style="display:none;">
+            <div class="queueHeader">
+              <div>
+                <div class="title" id="queueTitle">Queue</div>
+                <div class="sub" id="queueSub">Reorder with ↑/↓ (drag optional not used).</div>
+              </div>
+              <button class="btn small" id="clearQueueBtn">🗑️ <span id="clearQueueTxt">Clear</span></button>
+            </div>
+            <div class="queueList" id="queueList"></div>
+          </div>
+
         </div>
       </div>
     </div>
-  </div>
 
-  <div class="toast" id="toast">✅</div>
-
-  <!-- Modal -->
-  <div class="modalBack" id="modalBack" role="dialog" aria-modal="true">
-    <div class="modal">
-      <div class="modalHead">
-        <h3 id="modalTitle">—</h3>
-        <button class="btn icon" id="modalClose" aria-label="Close">✕</button>
+    <!-- Modal -->
+    <div class="modalOverlay" id="modalOverlay" aria-hidden="true">
+      <div class="modal" id="modal">
+        <div class="modalHead">
+          <div class="title" id="modalTitle">—</div>
+          <button class="btn small ghost" id="modalCloseBtn">✖️</button>
+        </div>
+        <div class="modalBody" id="modalBody"></div>
       </div>
-      <div class="modalBody" id="modalBody"></div>
-      <div class="modalFoot" id="modalFoot"></div>
     </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Hidden audio -->
+    <audio id="audio" preload="metadata" playsinline></audio>
   </div>
 
-  <input type="file" id="fileInput" multiple hidden />
-  <audio id="audio" preload="metadata"></audio>
+  <script>
+  (() => {
+    'use strict';
 
-<script>
-(() => {
-  // ===== i18n =====
-  const I18N = {
-    ru: {
-      appTitle: "Local Music Player",
-      appSub: "Safari-friendly • One-file app • GitHub Pages",
-      import: "Импорт",
-      relink: "Перепривязать",
-      library: "Библиотека",
-      playlist: "Плейлист",
-      clear: "Очистить",
-      searchLabel: "Поиск",
-      searchPH: "Поиск по названию...",
-      sortLabel: "Сортировка",
-      sortAddedDesc: "Добавлено ↓",
-      sortAddedAsc: "Добавлено ↑",
-      sortAZ: "A → Z",
-      sortZA: "Z → A",
-      filterLabel: "Фильтр",
-      filterAll: "Все",
-      filterFav: "Избранное",
-      filterMissing: "Нет файла",
-      categoryLabel: "Категория",
-      categoryAll: "Все категории",
-      newCategory: "Категория",
-      fav: "Избр",
-      setCat: "Категория",
-      addToPl: "Плейлист",
-      shuffle: "Случайно",
-      repeatOff: "Повтор: Выкл",
-      repeatAll: "Повтор: Все",
-      repeatOne: "Повтор: Один",
-      queue: "Очередь",
-      queueFromList: "Из списка",
-      queueClear: "Очистить",
-      hint: "Файлы локальные: после обновления страницы нужно импортировать заново (ограничение Safari). Плейлисты/категории/избранное сохраняются.",
-      idle: "Ожидание",
-      playing: "Играет",
-      paused: "Пауза",
-      missing: "Файл не привязан",
-      ok: "Готово",
-      cancel: "Отмена",
-      tracks: (n)=>`${n} треков`,
-      none: "—",
-      addPlaylistTitle: "Новый плейлист",
-      addPlaylistPH: "Название плейлиста",
-      addCategoryTitle: "Новая категория",
-      addCategoryPH: "Название категории",
-      pickPlaylistTitle: "Добавить в плейлист",
-      assignCategoryTitle: "Назначить категорию",
-      confirmClear: "Очистить библиотеку? (Настройки и плейлисты останутся)",
-      confirmQueueClear: "Очистить очередь?",
-      confirmRemove: "Удалить трек из библиотеки?",
-      relinkTip: "Импортируй те же файлы — приложение сопоставит по имени/размеру/дате.",
-      queueAddToast: "Добавлено в очередь",
-      relinkToast: "Перепривязка выполнена",
-      importToast: "Треки импортированы",
-      missingToast: "Файл не найден. Нажми «Перепривязать» и импортируй снова.",
-      playlistCreated: "Плейлист создан",
-      categoryCreated: "Категория создана",
-      moved: "Перемещено",
-      queueFromListToast: "Очередь собрана из списка",
-      noTracks: "Импортируй музыку кнопкой «Импорт».",
-      nothingFound: "Ничего не найдено.",
-      favoritesOnly: "Показываю избранное.",
-      missingOnly: "Показываю треки без файла.",
-      dragTip: "Перетаскивай за ручку ⠿. Если Safari капризничает — используй ↑/↓.",
-    },
-    en: {
-      appTitle: "Local Music Player",
-      appSub: "Safari-friendly • One-file app • GitHub Pages",
-      import: "Import",
-      relink: "Relink",
-      library: "Library",
-      playlist: "Playlist",
-      clear: "Clear",
-      searchLabel: "Search",
-      searchPH: "Search by name...",
-      sortLabel: "Sort",
-      sortAddedDesc: "Added ↓",
-      sortAddedAsc: "Added ↑",
-      sortAZ: "A → Z",
-      sortZA: "Z → A",
-      filterLabel: "Filter",
-      filterAll: "All",
-      filterFav: "Favorites",
-      filterMissing: "Missing files",
-      categoryLabel: "Category",
-      categoryAll: "All categories",
-      newCategory: "Category",
-      fav: "Fav",
-      setCat: "Category",
-      addToPl: "Playlist",
-      shuffle: "Shuffle",
-      repeatOff: "Repeat: Off",
-      repeatAll: "Repeat: All",
-      repeatOne: "Repeat: One",
-      queue: "Queue",
-      queueFromList: "From list",
-      queueClear: "Clear",
-      hint: "Files are local: after page refresh, you must import again (Safari limitation). Playlists/categories/favorites are saved.",
-      idle: "Idle",
-      playing: "Playing",
-      paused: "Paused",
-      missing: "Missing file",
-      ok: "OK",
-      cancel: "Cancel",
-      tracks: (n)=>`${n} tracks`,
-      none: "—",
-      addPlaylistTitle: "New playlist",
-      addPlaylistPH: "Playlist name",
-      addCategoryTitle: "New category",
-      addCategoryPH: "Category name",
-      pickPlaylistTitle: "Add to playlist",
-      assignCategoryTitle: "Assign category",
-      confirmClear: "Clear library? (Settings and playlists remain)",
-      confirmQueueClear: "Clear queue?",
-      confirmRemove: "Remove track from library?",
-      relinkTip: "Import the same files — the app matches by name/size/date.",
-      queueAddToast: "Added to queue",
-      relinkToast: "Relink complete",
-      importToast: "Tracks imported",
-      missingToast: "File missing. Click “Relink” and import again.",
-      playlistCreated: "Playlist created",
-      categoryCreated: "Category created",
-      moved: "Moved",
-      queueFromListToast: "Queue built from list",
-      noTracks: "Import music using the “Import” button.",
-      nothingFound: "Nothing found.",
-      favoritesOnly: "Showing favorites.",
-      missingOnly: "Showing tracks with missing files.",
-      dragTip: "Drag using ⠿. If Safari is picky, use ↑/↓.",
-    }
-  };
-
-  const LS = {
-    state: "lmp_state_v3",
-  };
-
-  // ===== DOM =====
-  const $ = (id)=>document.getElementById(id);
-
-  const audio = $("audio");
-  const fileInput = $("fileInput");
-
-  const btnImport = $("btnImport");
-  const btnRelink = $("btnRelink");
-  const btnClear = $("btnClear");
-  const btnTheme = $("btnTheme");
-  const btnLang = $("btnLang");
-
-  const search = $("search");
-  const sort = $("sort");
-  const filter = $("filter");
-  const category = $("category");
-  const btnNewCategory = $("btnNewCategory");
-  const btnNewPlaylist = $("btnNewPlaylist");
-
-  const libraryList = $("libraryList");
-  const queueList = $("queueList");
-
-  const nowTitle = $("nowTitle");
-  const nowCat = $("nowCat");
-  const nowStatus = $("nowStatus");
-
-  const btnFav = $("btnFav");
-  const btnAssignCat = $("btnAssignCat");
-  const btnAddToPlaylist = $("btnAddToPlaylist");
-
-  const btnPrev = $("btnPrev");
-  const btnPlay = $("btnPlay");
-  const btnNext = $("btnNext");
-  const btnShuffle = $("btnShuffle");
-  const btnRepeat = $("btnRepeat");
-
-  const seek = $("seek");
-  const timeCur = $("timeCur");
-  const timeDur = $("timeDur");
-  const vol = $("vol");
-  const btnMute = $("btnMute");
-
-  const btnQueueFromFiltered = $("btnQueueFromFiltered");
-  const btnQueueClear = $("btnQueueClear");
-
-  const toast = $("toast");
-
-  const ui_counter = $("ui_counter");
-
-  // modal
-  const modalBack = $("modalBack");
-  const modalTitle = $("modalTitle");
-  const modalBody = $("modalBody");
-  const modalFoot = $("modalFoot");
-  const modalClose = $("modalClose");
-
-  // ===== state =====
-  const state = {
-    lang: "ru",
-    theme: "dark",
-    // tracks: {id,name,addedAt,fav,cat, sig:{name,size,lastModified}, url?:string, missing:boolean}
-    tracks: [],
-    // playlists: {id,name, trackIds:[]}
-    playlists: [],
-    // queue: trackIds[]
-    queue: [],
-    currentId: null,
-    shuffle: false,
-    // repeat: "off" | "all" | "one"
-    repeat: "off",
-    volume: 0.9,
-    muted: false,
-    lastSeek: 0
-  };
-
-  // quick maps at runtime
-  const urlById = new Map();
-
-  function uid(){
-    return (crypto?.randomUUID?.() || ("id_"+Math.random().toString(16).slice(2)+Date.now().toString(16)));
-  }
-
-  function t(){ return I18N[state.lang]; }
-
-  function save(){
-    const safe = {
-      lang: state.lang,
-      theme: state.theme,
-      tracks: state.tracks.map(x => ({
-        id:x.id, name:x.name, addedAt:x.addedAt, fav:!!x.fav, cat:x.cat||"",
-        sig:x.sig || null,
-        missing: !!x.missing
-      })),
-      playlists: state.playlists.map(p=>({ id:p.id, name:p.name, trackIds:[...p.trackIds] })),
-      queue: [...state.queue],
-      currentId: state.currentId,
-      shuffle: state.shuffle,
-      repeat: state.repeat,
-      volume: state.volume,
-      muted: state.muted
+    // ========= Utils =========
+    const $ = (sel, root=document) => root.querySelector(sel);
+    const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+    const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+    const now = () => Date.now();
+    const fmtTime = (sec) => {
+      sec = isFinite(sec) ? Math.max(0, sec) : 0;
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60);
+      return `${m}:${String(s).padStart(2,'0')}`;
     };
-    localStorage.setItem(LS.state, JSON.stringify(safe));
-  }
+    const uid = () => Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 6);
 
-  function load(){
-    try{
-      const raw = localStorage.getItem(LS.state);
-      if(!raw) return;
-      const data = JSON.parse(raw);
+    // ========= i18n =========
+    const I18N = {
+      ru: {
+        topSub: 'iOS-first • Offline library',
+        nowChip: (n) => `${n} трек(ов)`,
+        tabs: { library:'Library', playlists:'Playlists', settings:'Settings' },
 
-      if(data.lang) state.lang = data.lang;
-      if(data.theme) state.theme = data.theme;
+        libTitle:'Library',
+        libSub:'Импортируй музыку (локально). После перезагрузки нужно Relink.',
+        import:'⬇️ Import',
+        relink:'🔗 Relink',
+        searchPh:'Поиск по названию/автору…',
+        all:'All', fav:'Favorites', missing:'Missing',
+        recent:'Recent', titleAZ:'Title A→Z', artistAZ:'Artist A→Z',
 
-      state.tracks = Array.isArray(data.tracks) ? data.tracks : [];
-      state.playlists = Array.isArray(data.playlists) ? data.playlists : [];
-      state.queue = Array.isArray(data.queue) ? data.queue : [];
-      state.currentId = data.currentId || null;
-      state.shuffle = !!data.shuffle;
-      state.repeat = data.repeat || "off";
-      state.volume = typeof data.volume === "number" ? data.volume : 0.9;
-      state.muted = !!data.muted;
+        plTitle:'Playlists',
+        plSub:'Создавай плейлисты, порядок меняй ↑/↓.',
+        create:'➕ Create',
 
-      // after reload, all urls are gone => missing unless relinked
-      state.tracks.forEach(tr => {
-        tr.missing = true;
+        setTitle:'Settings',
+        setSub:'Тема, язык, данные, помощь.',
+        themeTitle:'Theme', themeSub:'Dark / Light',
+        langTitle:'Language', langSub:'RU / EN',
+        dataTitle:'Data', dataSub:'Очистить библиотеку/плейлисты/избранное.',
+        clear:'🧹 Clear data',
+        helpTitle:'Help / iOS notes',
+        helpBody: `
+          <b>Как пользоваться:</b><br/>
+          1) В <b>Library</b> нажми <b>Import</b> и выбери аудиофайлы.<br/>
+          2) Тап по треку → начнёт играть и добавит в очередь.<br/>
+          3) Внизу всегда виден <b>mini-player</b> → тап/свайп вверх открывает полный плеер.<br/>
+          4) После перезагрузки страницы файлы станут <b>Missing</b> (ObjectURL не сохраняется) → нажми <b>Relink</b> и выбери те же файлы снова (по сигнатуре: имя + размер + lastModified).<br/><br/>
+          <b>Громкость на iPhone:</b> системная громкость часто управляется только кнопками телефона. В приложении есть <b>Mute</b> и <b>Gain (preamp)</b> через WebAudio (это “усиление”, не системная громкость).<br/><br/>
+          <b>Оффлайн:</b> данные о библиотеке/плейлистах хранятся в <span class="kbd">localStorage</span>. Сами файлы Safari не хранит — нужно relink.<br/>
+        `,
+
+        unknown:'Unknown Artist',
+        missingBadge:'Missing',
+        favBadge:'Favorite',
+
+        close:'Close',
+        queue:'Queue',
+        shuffle:'Shuffle',
+        repeat:'Repeat',
+        favorite:'Favorite',
+
+        audio:'Audio',
+        audioSub:'iPhone Safari: системная громкость часто только кнопками телефона.',
+        mute:'Mute',
+        unmute:'Unmute',
+        gainTitle:'Gain (preamp)',
+        gainSub:'Работает через WebAudio (если разрешено). Используй как “усиление”.',
+
+        metaTitle:'Track info',
+        metaSub:'Без ID3. Title = имя файла. Можно править вручную.',
+        edit:'Edit info',
+        addToPlaylist:'Add to playlist',
+        category:'Assign category',
+
+        queueTitle:'Queue',
+        queueSub:'Меняй порядок ↑/↓ (drag не используем).',
+        clearQueue:'Clear',
+
+        toasts: {
+          imported: (n)=>`Импортировано: ${n}`,
+          relinked: (n)=>`Relink: найдено ${n}`,
+          needRelink:'Некоторые треки Missing — нажми Relink и выбери файлы снова.',
+          cannotPlayMissing:'Файл Missing. Нужен Relink.',
+          createdPlaylist:'Плейлист создан',
+          updated:'Сохранено',
+          cleared:'Данные очищены'
+        },
+
+        modal: {
+          createPlaylist:'Create playlist',
+          playlistName:'Playlist name',
+          create:'Create',
+          cancel:'Cancel',
+          open:'Open',
+          back:'← Back',
+          rename:'Rename',
+          delete:'Delete',
+          add:'Add',
+          remove:'Remove',
+          pickPlaylist:'Pick playlist',
+          assignCategory:'Assign category',
+          categoryName:'Category name',
+          save:'Save',
+          editInfo:'Edit track info',
+          title:'Title',
+          artist:'Artist',
+          cover:'Cover image (optional)',
+          setCover:'Set cover',
+          clearCover:'Clear cover',
+          relinkTitle:'Relink files',
+          relinkBody:'Выбери те же файлы снова. Мы сопоставим по (name + size + lastModified).',
+          relinkBtn:'Relink now',
+          ok:'OK'
+        },
+
+        playlistEmpty:'No playlists yet.',
+        playlistTracksEmpty:'No tracks in this playlist.',
+        openPlaylist:'Open',
+        addFromLibrary:'Добавь треки из Library или через Full Player → Add to playlist.',
+      },
+      en: {
+        topSub: 'iOS-first • Offline library',
+        nowChip: (n) => `${n} track(s)`,
+        tabs: { library:'Library', playlists:'Playlists', settings:'Settings' },
+
+        libTitle:'Library',
+        libSub:'Import your music files (local). After refresh you must relink.',
+        import:'⬇️ Import',
+        relink:'🔗 Relink',
+        searchPh:'Search title / artist…',
+        all:'All', fav:'Favorites', missing:'Missing',
+        recent:'Recent', titleAZ:'Title A→Z', artistAZ:'Artist A→Z',
+
+        plTitle:'Playlists',
+        plSub:'Create playlists, reorder with ↑/↓.',
+        create:'➕ Create',
+
+        setTitle:'Settings',
+        setSub:'Theme, language, data, help.',
+        themeTitle:'Theme', themeSub:'Dark / Light',
+        langTitle:'Language', langSub:'RU / EN',
+        dataTitle:'Data', dataSub:'Clear library, playlists, favorites.',
+        clear:'🧹 Clear data',
+        helpTitle:'Help / iOS notes',
+        helpBody: `
+          <b>How to use:</b><br/>
+          1) In <b>Library</b> tap <b>Import</b> and pick audio files.<br/>
+          2) Tap a track → plays + adds to queue.<br/>
+          3) Bottom <b>mini-player</b> is always visible → tap / swipe up to open full player.<br/>
+          4) After page reload, files become <b>Missing</b> (ObjectURL can’t be saved) → press <b>Relink</b> and pick the same files again (signature: name + size + lastModified).<br/><br/>
+          <b>iPhone volume:</b> system volume is often controlled only by hardware buttons. This app provides <b>Mute</b> and <b>Gain (preamp)</b> via WebAudio (boost, not system volume).<br/><br/>
+          <b>Offline:</b> library/playlists stored in <span class="kbd">localStorage</span>. Safari does not keep your files — you must relink.<br/>
+        `,
+
+        unknown:'Unknown Artist',
+        missingBadge:'Missing',
+        favBadge:'Favorite',
+
+        close:'Close',
+        queue:'Queue',
+        shuffle:'Shuffle',
+        repeat:'Repeat',
+        favorite:'Favorite',
+
+        audio:'Audio',
+        audioSub:'iPhone Safari: system volume often only via phone buttons.',
+        mute:'Mute',
+        unmute:'Unmute',
+        gainTitle:'Gain (preamp)',
+        gainSub:'Works via WebAudio (if allowed). Use as “boost”.',
+
+        metaTitle:'Track info',
+        metaSub:'No ID3. Title = filename. Edit manually.',
+        edit:'Edit info',
+        addToPlaylist:'Add to playlist',
+        category:'Assign category',
+
+        queueTitle:'Queue',
+        queueSub:'Reorder with ↑/↓ (no drag).',
+        clearQueue:'Clear',
+
+        toasts: {
+          imported: (n)=>`Imported: ${n}`,
+          relinked: (n)=>`Relink: matched ${n}`,
+          needRelink:'Some tracks are Missing — tap Relink and pick files again.',
+          cannotPlayMissing:'File is Missing. Please Relink.',
+          createdPlaylist:'Playlist created',
+          updated:'Saved',
+          cleared:'Data cleared'
+        },
+
+        modal: {
+          createPlaylist:'Create playlist',
+          playlistName:'Playlist name',
+          create:'Create',
+          cancel:'Cancel',
+          open:'Open',
+          back:'← Back',
+          rename:'Rename',
+          delete:'Delete',
+          add:'Add',
+          remove:'Remove',
+          pickPlaylist:'Pick playlist',
+          assignCategory:'Assign category',
+          categoryName:'Category name',
+          save:'Save',
+          editInfo:'Edit track info',
+          title:'Title',
+          artist:'Artist',
+          cover:'Cover image (optional)',
+          setCover:'Set cover',
+          clearCover:'Clear cover',
+          relinkTitle:'Relink files',
+          relinkBody:'Pick the same files again. We match by (name + size + lastModified).',
+          relinkBtn:'Relink now',
+          ok:'OK'
+        },
+
+        playlistEmpty:'No playlists yet.',
+        playlistTracksEmpty:'No tracks in this playlist.',
+        openPlaylist:'Open',
+        addFromLibrary:'Add tracks from Library or via Full Player → Add to playlist.',
+      }
+    };
+
+    // ========= Storage =========
+    const KEY = 'mini_music_v1';
+    const load = () => {
+      try{
+        const raw = localStorage.getItem(KEY);
+        if(!raw) return null;
+        return JSON.parse(raw);
+      }catch(e){ return null; }
+    };
+    const save = (obj) => {
+      localStorage.setItem(KEY, JSON.stringify(obj));
+    };
+
+    // ========= App state =========
+    const appEl = $('#app');
+    const audio = $('#audio');
+
+    const isIOS = (() => {
+      const ua = navigator.userAgent || '';
+      return /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    })();
+
+    let state = {
+      settings: {
+        theme: 'dark',
+        lang: 'ru',
+        lastPlayedId: null,
+        shuffle: false,
+        repeat: 'off', // off | all | one
+        muted: false,
+        gain: 1.0, // 0..2
+      },
+      library: {
+        tracks: [] // {id, sig:{name,size,mod}, title, artist, coverDataUrl|null, category:'', fav:false, missing:true, addedAt}
+      },
+      playlists: {
+        byId: {}, // id -> {id, name, trackIds:[]}
+        order: []  // playlist ids
+      },
+      queue: {
+        ids: [],
+        index: -1
+      }
+    };
+
+    // ========= WebAudio gain (iOS-friendly) =========
+    let audioCtx = null;
+    let gainNode = null;
+    let sourceNode = null;
+    let webAudioReady = false;
+
+    function ensureWebAudio() {
+      if(webAudioReady) return true;
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if(!Ctx) return false;
+      try{
+        audioCtx = audioCtx || new Ctx();
+        // must be resumed by user gesture on iOS
+        if(audioCtx.state === 'suspended') {
+          // resume will be called in a user gesture handler
+        }
+        gainNode = gainNode || audioCtx.createGain();
+        gainNode.gain.value = state.settings.muted ? 0 : state.settings.gain;
+
+        if(!sourceNode){
+          sourceNode = audioCtx.createMediaElementSource(audio);
+          sourceNode.connect(gainNode).connect(audioCtx.destination);
+        }
+        webAudioReady = true;
+        return true;
+      }catch(e){
+        // If MediaElementSource fails (can happen if recreated), fallback silently
+        return false;
+      }
+    }
+
+    async function resumeAudioContextIfNeeded() {
+      if(!audioCtx) return;
+      if(audioCtx.state === 'suspended') {
+        try { await audioCtx.resume(); } catch(e) {}
+      }
+    }
+
+    // ========= ObjectURL map (not persisted) =========
+    const urlMap = new Map(); // trackId -> objectURL
+    const revokeAllUrls = () => {
+      for(const u of urlMap.values()){
+        try{ URL.revokeObjectURL(u); }catch(e){}
+      }
+      urlMap.clear();
+    };
+    window.addEventListener('beforeunload', () => revokeAllUrls());
+
+    // ========= UI refs =========
+    const screens = $('#screens');
+    const trackList = $('#trackList');
+    const playlistViewRoot = $('#playlistViewRoot');
+
+    const fileInput = $('#fileInput');
+    const relinkBtn = $('#relinkBtn');
+    const searchInput = $('#searchInput');
+    const sortSelect = $('#sortSelect');
+    const filterPills = $('#filterPills');
+
+    const miniPlayer = $('#miniPlayer');
+    const miniTitle = $('#miniTitle');
+    const miniArtist = $('#miniArtist');
+    const miniCover = $('#miniCover');
+    const miniPlayBtn = $('#miniPlayBtn');
+    const miniNextBtn = $('#miniNextBtn');
+
+    const sheetOverlay = $('#sheetOverlay');
+    const closeSheetBtn = $('#closeSheetBtn');
+    const queueToggleBtn = $('#queueToggleBtn');
+    const queuePanel = $('#queuePanel');
+    const queueList = $('#queueList');
+
+    const bigCover = $('#bigCover');
+    const bigTitle = $('#bigTitle');
+    const bigArtist = $('#bigArtist');
+    const seek = $('#seek');
+    const tCur = $('#tCur');
+    const tDur = $('#tDur');
+    const playBtn = $('#playBtn');
+    const prevBtn = $('#prevBtn');
+    const nextBtn = $('#nextBtn');
+
+    const shuffleBtn = $('#shuffleBtn');
+    const repeatBtn = $('#repeatBtn');
+    const shuffleState = $('#shuffleState');
+    const repeatState = $('#repeatState');
+    const favBtn = $('#favBtn');
+
+    const muteBtn = $('#muteBtn');
+    const gain = $('#gain');
+    const volumeHint = $('#volumeHint');
+
+    const editInfoBtn = $('#editInfoBtn');
+    const addToPlaylistBtn = $('#addToPlaylistBtn');
+    const assignCatBtn = $('#assignCatBtn');
+    const clearQueueBtn = $('#clearQueueBtn');
+
+    const themeToggle = $('#themeToggle');
+    const langToggle = $('#langToggle');
+    const clearDataBtn = $('#clearDataBtn');
+
+    const nowChip = $('#nowChip');
+    const toast = $('#toast');
+
+    const modalOverlay = $('#modalOverlay');
+    const modalTitle = $('#modalTitle');
+    const modalBody = $('#modalBody');
+    const modalCloseBtn = $('#modalCloseBtn');
+
+    // ========= i18n apply =========
+    function t() { return I18N[state.settings.lang] || I18N.ru; }
+
+    function applyTexts() {
+      const L = t();
+
+      $('#topSub').textContent = L.topSub;
+      $('#tabLibrary').textContent = L.tabs.library;
+      $('#tabPlaylists').textContent = L.tabs.playlists;
+      $('#tabSettings').textContent = L.tabs.settings;
+
+      $('#libTitle').textContent = L.libTitle;
+      $('#libSub').textContent = L.libSub;
+      $('#importBtn').textContent = L.import;
+      $('#relinkBtn').textContent = L.relink;
+      $('#searchInput').placeholder = L.searchPh;
+
+      $('#pillAll').textContent = L.all;
+      $('#pillFav').textContent = L.fav;
+      $('#pillMissing').textContent = L.missing;
+
+      // sort select labels (keep values)
+      const opts = $$('#sortSelect option');
+      if(opts[0]) opts[0].textContent = L.recent;
+      if(opts[1]) opts[1].textContent = L.titleAZ;
+      if(opts[2]) opts[2].textContent = L.artistAZ;
+
+      $('#plTitle').textContent = L.plTitle;
+      $('#plSub').textContent = L.plSub;
+      $('#createPlaylistBtn').textContent = L.create;
+
+      $('#setTitle').textContent = L.setTitle;
+      $('#setSub').textContent = L.setSub;
+      $('#themeTitle').textContent = L.themeTitle;
+      $('#themeSub').textContent = L.themeSub;
+      $('#langTitle').textContent = L.langTitle;
+      $('#langSub').textContent = L.langSub;
+      $('#dataTitle').textContent = L.dataTitle;
+      $('#dataSub').textContent = L.dataSub;
+      $('#clearDataBtn').textContent = L.clear;
+      $('#helpTitle').textContent = L.helpTitle;
+      $('#helpBody').innerHTML = L.helpBody;
+
+      $('#closeTxt').textContent = L.close;
+      $('#queueTxt').textContent = L.queue;
+      $('#shuffleTxt').textContent = L.shuffle;
+      $('#repeatTxt').textContent = L.repeat;
+      $('#favTxt').textContent = L.favorite;
+
+      $('#volTitle').textContent = L.audio;
+      $('#volSub').textContent = L.audioSub;
+      $('#gainTitle').textContent = L.gainTitle;
+      $('#gainSub').textContent = L.gainSub;
+
+      $('#metaTitle').textContent = L.metaTitle;
+      $('#metaSub').textContent = L.metaSub;
+      $('#editTxt').textContent = L.edit;
+      $('#addPlTxt').textContent = L.addToPlaylist;
+      $('#catTxt').textContent = L.category;
+
+      $('#queueTitle').textContent = L.queueTitle;
+      $('#queueSub').textContent = L.queueSub;
+      $('#clearQueueTxt').textContent = L.clearQueue;
+
+      // toggles
+      themeToggle.textContent = state.settings.theme === 'dark' ? '🌙 Dark' : '☀️ Light';
+      langToggle.textContent = state.settings.lang === 'ru' ? '🇷🇺 RU' : '🇺🇸 EN';
+
+      updateNowChip();
+      updateVolumeHint();
+    }
+
+    // ========= Toast =========
+    let toastTimer = null;
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 1800);
+    }
+
+    // ========= Modal =========
+    function openModal(title, contentNode) {
+      modalTitle.textContent = title;
+      modalBody.innerHTML = '';
+      modalBody.appendChild(contentNode);
+      modalOverlay.classList.add('show');
+      modalOverlay.setAttribute('aria-hidden','false');
+    }
+    function closeModal() {
+      modalOverlay.classList.remove('show');
+      modalOverlay.setAttribute('aria-hidden','true');
+    }
+    modalCloseBtn.addEventListener('click', closeModal);
+    modalOverlay.addEventListener('click', (e) => {
+      if(e.target === modalOverlay) closeModal();
+    });
+
+    // ========= Tabs =========
+    function setTab(name){
+      $$('.tab').forEach(el => el.classList.toggle('active', el.dataset.tab === name));
+      $$('.screen').forEach(el => el.classList.toggle('active', el.id === 'screen-' + name));
+    }
+    $('#tabbar').addEventListener('click', (e) => {
+      const tab = e.target.closest('.tab');
+      if(!tab) return;
+      setTab(tab.dataset.tab);
+    });
+
+    // ========= Full player open/close =========
+    function openSheet() {
+      sheetOverlay.classList.add('show');
+      sheetOverlay.setAttribute('aria-hidden','false');
+    }
+    function closeSheet() {
+      sheetOverlay.classList.remove('show');
+      sheetOverlay.setAttribute('aria-hidden','true');
+      queuePanel.style.display = 'none';
+    }
+    closeSheetBtn.addEventListener('click', closeSheet);
+    sheetOverlay.addEventListener('click', (e) => {
+      if(e.target === sheetOverlay) closeSheet();
+    });
+
+    // tap / swipe on mini
+    let miniTouchStartY = 0;
+    miniPlayer.addEventListener('click', (e) => {
+      if(e.target.closest('button')) return;
+      openSheet();
+    });
+    miniPlayer.addEventListener('touchstart', (e) => {
+      miniTouchStartY = (e.touches && e.touches[0]) ? e.touches[0].clientY : 0;
+    }, {passive:true});
+    miniPlayer.addEventListener('touchend', (e) => {
+      const endY = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0].clientY : miniTouchStartY;
+      if(miniTouchStartY - endY > 22) openSheet();
+    });
+
+    // ========= Library import / relink =========
+    const allowedExt = new Set(['mp3','m4a','aac','wav','ogg','flac']);
+    function isAudioFile(file){
+      const name = (file.name || '').toLowerCase();
+      const ext = name.includes('.') ? name.split('.').pop() : '';
+      // Safari sometimes returns video types; filter by ext OR audio/*
+      if(ext && allowedExt.has(ext)) return true;
+      if(file.type && file.type.startsWith('audio/')) return true;
+      return false;
+    }
+
+    function sigOf(file){
+      return { name: file.name, size: file.size, mod: file.lastModified || 0 };
+    }
+    function sigKey(sig){
+      return `${sig.name}__${sig.size}__${sig.mod}`;
+    }
+
+    function addFilesToLibrary(files){
+      const L = t();
+      const arr = Array.from(files || []).filter(isAudioFile);
+      if(arr.length === 0) return;
+
+      // Build sig map for quick matching existing
+      const existingBySig = new Map(state.library.tracks.map(tr => [sigKey(tr.sig), tr]));
+      let added = 0;
+
+      for(const f of arr){
+        const sig = sigOf(f);
+        const key = sigKey(sig);
+
+        if(existingBySig.has(key)){
+          // treat as relink for that existing track
+          const tr = existingBySig.get(key);
+          linkTrackFile(tr.id, f);
+          continue;
+        }
+
+        const id = uid();
+        const base = (f.name || 'Track').replace(/\.[^/.]+$/, '');
+        const tr = {
+          id,
+          sig,
+          title: base || 'Track',
+          artist: L.unknown,
+          coverDataUrl: null,
+          category: '',
+          fav: false,
+          missing: true, // will become false after linking
+          addedAt: now()
+        };
+        state.library.tracks.unshift(tr);
+        linkTrackFile(id, f);
+        added++;
+      }
+
+      persist();
+      renderAll();
+      showToast(L.toasts.imported(added));
+      if(state.library.tracks.some(x=>x.missing)) showToast(L.toasts.needRelink);
+    }
+
+    function linkTrackFile(trackId, file){
+      const tr = state.library.tracks.find(x => x.id === trackId);
+      if(!tr) return;
+
+      // revoke old URL if any
+      const old = urlMap.get(trackId);
+      if(old){
+        try{ URL.revokeObjectURL(old); }catch(e){}
+        urlMap.delete(trackId);
+      }
+      const url = URL.createObjectURL(file);
+      urlMap.set(trackId, url);
+
+      tr.missing = false;
+    }
+
+    fileInput.addEventListener('change', (e) => {
+      addFilesToLibrary(e.target.files);
+      fileInput.value = '';
+    });
+
+    relinkBtn.addEventListener('click', () => {
+      openRelinkModal();
+    });
+
+    function openRelinkModal(){
+      const L = t();
+      const wrap = document.createElement('div');
+      wrap.innerHTML = `
+        <div class="muted" style="margin-bottom:10px">${L.modal.relinkBody}</div>
+        <div class="row wrap" style="gap:10px">
+          <label class="btn primary" style="flex:1; min-width:220px" for="relinkFileInput">🔗 ${L.modal.relinkBtn}</label>
+          <button class="btn" id="relinkOkBtn">${L.modal.ok}</button>
+        </div>
+        <input id="relinkFileInput" type="file" accept=".mp3,.m4a,.aac,.wav,.ogg,.flac,audio/*" multiple hidden />
+      `;
+      openModal(L.modal.relinkTitle, wrap);
+      $('#relinkOkBtn', wrap).addEventListener('click', closeModal);
+      const relinkInput = $('#relinkFileInput', wrap);
+      relinkInput.addEventListener('change', () => {
+        const files = Array.from(relinkInput.files || []).filter(isAudioFile);
+        const bySig = new Map(files.map(f => [sigKey(sigOf(f)), f]));
+        let matched = 0;
+        for(const tr of state.library.tracks){
+          const f = bySig.get(sigKey(tr.sig));
+          if(f){
+            linkTrackFile(tr.id, f);
+            matched++;
+          } else {
+            // still missing after relink attempt
+            tr.missing = true;
+          }
+        }
+        persist();
+        renderAll();
+        showToast(L.toasts.relinked(matched));
+        relinkInput.value = '';
+      });
+    }
+
+    // ========= Rendering: Library list =========
+    let ui = {
+      filter: 'all',
+      sort: 'recent',
+      search: ''
+    };
+
+    searchInput.addEventListener('input', () => {
+      ui.search = (searchInput.value || '').trim().toLowerCase();
+      renderLibrary();
+    });
+    sortSelect.addEventListener('change', () => {
+      ui.sort = sortSelect.value;
+      renderLibrary();
+    });
+    filterPills.addEventListener('click', (e) => {
+      const pill = e.target.closest('.pill');
+      if(!pill) return;
+      ui.filter = pill.dataset.filter;
+      $$('.pill', filterPills).forEach(p => p.classList.toggle('active', p.dataset.filter === ui.filter));
+      renderLibrary();
+    });
+
+    function makeCoverEl(track){
+      const c = document.createElement('div');
+      c.className = 'cover';
+      if(track.coverDataUrl){
+        const img = document.createElement('img');
+        img.src = track.coverDataUrl;
+        img.alt = '';
+        c.appendChild(img);
+      } else {
+        c.innerHTML = `
+          <svg class="note" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M9 18a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="currentColor" stroke-width="2"/>
+            <path d="M12 15V5l9-2v10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path d="M18 19a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="currentColor" stroke-width="2"/>
+          </svg>
+        `;
+      }
+      return c;
+    }
+
+    function renderLibrary(){
+      const L = t();
+      const tracks = [...state.library.tracks];
+
+      // filter
+      let filtered = tracks.filter(tr => {
+        if(ui.filter === 'fav' && !tr.fav) return false;
+        if(ui.filter === 'missing' && !tr.missing) return false;
+        if(ui.search){
+          const hay = `${tr.title} ${tr.artist}`.toLowerCase();
+          if(!hay.includes(ui.search)) return false;
+        }
+        return true;
       });
 
-    }catch(e){}
-  }
+      // sort
+      if(ui.sort === 'recent'){
+        filtered.sort((a,b) => (b.addedAt||0) - (a.addedAt||0));
+      } else if(ui.sort === 'title'){
+        filtered.sort((a,b) => (a.title||'').localeCompare(b.title||''));
+      } else if(ui.sort === 'artist'){
+        filtered.sort((a,b) => (a.artist||'').localeCompare(b.artist||''));
+      }
 
-  function showToast(msg){
-    toast.textContent = msg;
-    toast.classList.add("show");
-    clearTimeout(showToast._t);
-    showToast._t = setTimeout(()=>toast.classList.remove("show"), 1400);
-  }
+      trackList.innerHTML = '';
 
-  function formatTime(s){
-    if(!isFinite(s)) return "0:00";
-    s = Math.max(0, Math.floor(s));
-    const m = Math.floor(s/60);
-    const r = s%60;
-    return `${m}:${String(r).padStart(2,"0")}`;
-  }
+      for(const tr of filtered){
+        const card = document.createElement('div');
+        card.className = 'track';
+        card.dataset.id = tr.id;
 
-  function normalizeName(name){
-    return (name || "").replace(/\.(mp3|wav|ogg|m4a|aac|flac)$/i,"").trim();
-  }
+        const cover = makeCoverEl(tr);
 
-  function makeSig(file){
-    return { name: file.name, size: file.size, lastModified: file.lastModified || 0 };
-  }
-
-  function sigKey(sig){
-    return `${sig?.name||""}__${sig?.size||0}__${sig?.lastModified||0}`;
-  }
-
-  function setTheme(theme){
-    state.theme = theme;
-    document.body.setAttribute("data-theme", theme);
-    save();
-  }
-
-  function applyLang(){
-    const L = t();
-    $("ui_appTitle").textContent = L.appTitle;
-    $("ui_appSub").textContent = L.appSub;
-    $("ui_import").textContent = L.import;
-    $("ui_relink").textContent = L.relink;
-    $("ui_library").textContent = L.library;
-    $("ui_playlist").textContent = L.playlist;
-    $("ui_clear").textContent = L.clear;
-
-    $("ui_searchLabel").textContent = L.searchLabel;
-    search.placeholder = L.searchPH;
-
-    $("ui_sortLabel").textContent = L.sortLabel;
-    $("ui_sortAddedDesc").textContent = L.sortAddedDesc;
-    $("ui_sortAddedAsc").textContent = L.sortAddedAsc;
-    $("ui_sortAZ").textContent = L.sortAZ;
-    $("ui_sortZA").textContent = L.sortZA;
-
-    $("ui_filterLabel").textContent = L.filterLabel;
-    $("ui_filterAll").textContent = L.filterAll;
-    $("ui_filterFav").textContent = L.filterFav;
-    $("ui_filterMissing").textContent = L.filterMissing;
-
-    $("ui_categoryLabel").textContent = L.categoryLabel;
-    $("ui_categoryAll").textContent = L.categoryAll;
-    $("ui_newCategory").textContent = L.newCategory;
-
-    $("ui_fav").textContent = L.fav;
-    $("ui_setCat").textContent = L.setCat;
-    $("ui_addToPl").textContent = L.addToPl;
-
-    $("ui_shuffle").textContent = L.shuffle;
-    updateRepeatText();
-
-    $("ui_queue").textContent = L.queue;
-    $("ui_queueFromList").textContent = L.queueFromList;
-    $("ui_queueClear").textContent = L.queueClear;
-
-    $("ui_hint").textContent = L.hint;
-
-    $("ui_hotkeys").innerHTML = `
-      <span class="kbd">Space</span> ${state.lang==="ru"?"Пуск":"Play"}
-      <span class="kbd">←</span><span class="kbd">→</span> ${state.lang==="ru"?"Промотка":"Seek"}
-      <span class="kbd">↑</span><span class="kbd">↓</span> ${state.lang==="ru"?"Громкость":"Vol"}
-      <span class="kbd">N</span>/<span class="kbd">P</span> ${state.lang==="ru"?"След/Пред":"Next/Prev"}
-    `;
-
-    btnLang.textContent = state.lang.toUpperCase();
-    render();
-  }
-
-  function updateRepeatText(){
-    const L = t();
-    if(state.repeat==="off") $("ui_repeat").textContent = L.repeatOff.replace("Repeat: ","");
-    if(state.repeat==="all") $("ui_repeat").textContent = L.repeatAll.replace("Repeat: ","");
-    if(state.repeat==="one") $("ui_repeat").textContent = L.repeatOne.replace("Repeat: ","");
-    // button label full:
-    btnRepeat.innerHTML = `🔁 <span id="ui_repeat">${
-      state.repeat==="off"?L.repeatOff:
-      state.repeat==="all"?L.repeatAll:
-      L.repeatOne
-    }</span>`;
-  }
-
-  function getTrack(id){
-    return state.tracks.find(x=>x.id===id) || null;
-  }
-
-  function setNowPlayingUI(){
-    const L = t();
-    const tr = state.currentId ? getTrack(state.currentId) : null;
-    if(!tr){
-      nowTitle.textContent = L.none;
-      nowCat.textContent = L.none;
-      nowStatus.textContent = L.idle;
-      nowStatus.className = "badge";
-      btnFav.disabled = true;
-      btnAssignCat.disabled = true;
-      btnAddToPlaylist.disabled = true;
-      return;
-    }
-    nowTitle.textContent = tr.name || L.none;
-    nowCat.textContent = tr.cat ? tr.cat : L.none;
-
-    let statusText = audio.paused ? L.paused : L.playing;
-    let badgeClass = audio.paused ? "badge warn" : "badge good";
-
-    if(tr.missing){
-      statusText = L.missing;
-      badgeClass = "badge bad";
-    }
-    nowStatus.textContent = statusText;
-    nowStatus.className = badgeClass;
-
-    btnFav.disabled = false;
-    btnAssignCat.disabled = false;
-    btnAddToPlaylist.disabled = false;
-
-    btnFav.style.borderColor = tr.fav ? "rgba(255,207,90,.75)" : "";
-  }
-
-  function filteredTracks(){
-    const q = search.value.trim().toLowerCase();
-    const f = filter.value;
-    const cat = category.value;
-
-    let list = state.tracks.slice();
-
-    // filter
-    if(f==="favorites") list = list.filter(x=>x.fav);
-    if(f==="missing") list = list.filter(x=>x.missing);
-
-    // category
-    if(cat!=="all") list = list.filter(x => (x.cat||"") === cat);
-
-    // search
-    if(q) list = list.filter(x => (x.name||"").toLowerCase().includes(q));
-
-    // sort
-    const s = sort.value;
-    if(s==="added_desc") list.sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
-    if(s==="added_asc") list.sort((a,b)=>(a.addedAt||0)-(b.addedAt||0));
-    if(s==="az") list.sort((a,b)=>(a.name||"").localeCompare(b.name||""));
-    if(s==="za") list.sort((a,b)=>(b.name||"").localeCompare(a.name||""));
-
-    return list;
-  }
-
-  function ensureCategoryOptions(){
-    const cats = Array.from(new Set(state.tracks.map(x=>x.cat).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
-    // keep 'all'
-    const current = category.value || "all";
-    category.innerHTML = `<option value="all">${t().categoryAll}</option>`;
-    for(const c of cats){
-      const opt = document.createElement("option");
-      opt.value = c;
-      opt.textContent = c;
-      category.appendChild(opt);
-    }
-    // restore if exists
-    const exists = Array.from(category.options).some(o=>o.value===current);
-    category.value = exists ? current : "all";
-  }
-
-  function render(){
-    const L = t();
-    ensureCategoryOptions();
-
-    ui_counter.textContent = L.tracks(state.tracks.length);
-
-    // Library
-    libraryList.innerHTML = "";
-    const list = filteredTracks();
-
-    if(!state.tracks.length){
-      const div = document.createElement("div");
-      div.className = "tSub";
-      div.style.padding = "10px 2px";
-      div.textContent = L.noTracks;
-      libraryList.appendChild(div);
-    } else if(!list.length){
-      const div = document.createElement("div");
-      div.className = "tSub";
-      div.style.padding = "10px 2px";
-      div.textContent = L.nothingFound;
-      libraryList.appendChild(div);
-    } else {
-      for(const tr of list){
-        const el = document.createElement("div");
-        el.className = "track" + (tr.id===state.currentId ? " active" : "");
-        const icon = tr.missing ? "⚠️" : (tr.fav ? "⭐" : "♪");
-        const catText = tr.cat ? tr.cat : L.none;
-
-        const statusBadge = tr.missing
-          ? `<span class="badge bad">${L.missing}</span>`
-          : (tr.fav ? `<span class="badge good">★</span>` : `<span class="badge">OK</span>`);
-
-        el.innerHTML = `
-          <div class="tIcon">${icon}</div>
-          <div class="tMeta">
-            <div class="tTitle">${escapeHtml(tr.name || L.none)}</div>
-            <div class="tSub">
-              <span class="badge">${escapeHtml(catText)}</span>
-              ${statusBadge}
-            </div>
-          </div>
-          <div class="tBtns">
-            <button class="btn small" data-act="fav">⭐</button>
-            <button class="btn small" data-act="cat">🏷</button>
-            <button class="btn small danger" data-act="del">🗑</button>
+        const meta = document.createElement('div');
+        meta.className = 'tmeta';
+        meta.innerHTML = `
+          <div class="tname">${escapeHtml(tr.title || 'Track')}</div>
+          <div class="tauthor">${escapeHtml(tr.artist || L.unknown)}</div>
+          <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
+            ${tr.missing ? `<span class="badge missing">⚠️ ${L.missingBadge}</span>` : ``}
+            ${tr.fav ? `<span class="badge fav">⭐ ${L.favBadge}</span>` : ``}
+            ${tr.category ? `<span class="badge">🏷️ ${escapeHtml(tr.category)}</span>` : ``}
           </div>
         `;
-        el.addEventListener("click", (e)=>{
-          const act = e.target?.getAttribute?.("data-act");
-          if(act){
-            e.stopPropagation();
-            if(act==="fav"){ toggleFav(tr.id); return; }
-            if(act==="cat"){ openAssignCategory(tr.id); return; }
-            if(act==="del"){ removeTrack(tr.id); return; }
+
+        const actions = document.createElement('div');
+        actions.className = 'actions';
+        const fav = document.createElement('button');
+        fav.className = 'btn icon';
+        fav.textContent = tr.fav ? '⭐' : '☆';
+        fav.setAttribute('aria-label','Favorite');
+        fav.addEventListener('click', (e) => {
+          e.stopPropagation();
+          tr.fav = !tr.fav;
+          persist();
+          renderLibrary();
+          renderPlayerUI();
+        });
+
+        const more = document.createElement('button');
+        more.className = 'btn icon';
+        more.textContent = '⋯';
+        more.setAttribute('aria-label','More');
+        more.addEventListener('click', (e) => {
+          e.stopPropagation();
+          openTrackActionsModal(tr.id);
+        });
+
+        actions.appendChild(fav);
+        actions.appendChild(more);
+
+        card.appendChild(cover);
+        card.appendChild(meta);
+        card.appendChild(actions);
+
+        card.addEventListener('click', () => {
+          // tap track -> play + add to queue
+          enqueueAndPlay(tr.id);
+        });
+
+        trackList.appendChild(card);
+      }
+
+      updateNowChip();
+    }
+
+    // ========= Playlists rendering =========
+    let playlistView = { mode:'list', currentId:null };
+
+    function renderPlaylists(){
+      const L = t();
+      playlistViewRoot.innerHTML = '';
+
+      if(playlistView.mode === 'list'){
+        const listWrap = document.createElement('div');
+
+        if(state.playlists.order.length === 0){
+          const empty = document.createElement('div');
+          empty.className = 'hint';
+          empty.textContent = L.playlistEmpty;
+          listWrap.appendChild(empty);
+        } else {
+          for(const pid of state.playlists.order){
+            const pl = state.playlists.byId[pid];
+            if(!pl) continue;
+
+            const row = document.createElement('div');
+            row.className = 'track';
+            row.style.alignItems = 'flex-start';
+
+            const cover = document.createElement('div');
+            cover.className = 'cover';
+            cover.innerHTML = '🎵';
+
+            const meta = document.createElement('div');
+            meta.className = 'tmeta';
+            meta.innerHTML = `
+              <div class="tname">${escapeHtml(pl.name || 'Playlist')}</div>
+              <div class="tauthor">${pl.trackIds.length} track(s)</div>
+            `;
+
+            const actions = document.createElement('div');
+            actions.className = 'actions';
+            const openBtn = document.createElement('button');
+            openBtn.className = 'btn small';
+            openBtn.textContent = L.openPlaylist;
+            openBtn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              playlistView.mode = 'detail';
+              playlistView.currentId = pl.id;
+              renderPlaylists();
+            });
+            const moreBtn = document.createElement('button');
+            moreBtn.className = 'btn icon';
+            moreBtn.textContent = '⋯';
+            moreBtn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              openPlaylistActionsModal(pl.id);
+            });
+            actions.appendChild(openBtn);
+            actions.appendChild(moreBtn);
+
+            row.appendChild(cover);
+            row.appendChild(meta);
+            row.appendChild(actions);
+            row.addEventListener('click', () => {
+              playlistView.mode = 'detail';
+              playlistView.currentId = pl.id;
+              renderPlaylists();
+            });
+
+            listWrap.appendChild(row);
           }
-          playTrack(tr.id);
-        });
-        libraryList.appendChild(el);
-      }
-    }
+        }
 
-    // Queue
-    renderQueue();
-    setNowPlayingUI();
+        playlistViewRoot.appendChild(listWrap);
+      } else {
+        const pid = playlistView.currentId;
+        const pl = state.playlists.byId[pid];
+        if(!pl){
+          playlistView.mode='list'; playlistView.currentId=null;
+          return renderPlaylists();
+        }
 
-    // shuffle/repeat button states
-    btnShuffle.style.borderColor = state.shuffle ? "rgba(90,167,255,.85)" : "";
-    updateRepeatText();
-
-    // volume
-    vol.value = String(state.volume);
-    audio.volume = state.volume;
-    audio.muted = state.muted;
-    btnMute.textContent = state.muted ? "🔇" : "🔊";
-  }
-
-  function escapeHtml(str){
-    return String(str).replace(/[&<>"']/g, m => ({
-      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-    }[m]));
-  }
-
-  function playTrack(id){
-    const tr = getTrack(id);
-    if(!tr) return;
-
-    state.currentId = id;
-    save();
-
-    if(tr.missing || !urlById.get(id)){
-      showToast(t().missingToast);
-      setNowPlayingUI();
-      return;
-    }
-
-    audio.src = urlById.get(id);
-    audio.play().catch(()=>{});
-    btnPlay.textContent = "⏸";
-    setNowPlayingUI();
-
-    // ensure in queue
-    if(!state.queue.includes(id)){
-      state.queue.push(id);
-      save();
-      renderQueue();
-    }
-  }
-
-  function togglePlay(){
-    if(!state.currentId){
-      // try play first from queue or list
-      const id = state.queue[0] || (state.tracks[0]?.id ?? null);
-      if(id) playTrack(id);
-      return;
-    }
-    const tr = getTrack(state.currentId);
-    if(tr?.missing){
-      showToast(t().missingToast);
-      return;
-    }
-    if(audio.paused){
-      audio.play().catch(()=>{});
-      btnPlay.textContent = "⏸";
-    }else{
-      audio.pause();
-      btnPlay.textContent = "▶️";
-    }
-    setNowPlayingUI();
-  }
-
-  function nextTrack(){
-    const L = t();
-    if(!state.queue.length){
-      showToast(L.queueClear);
-      return;
-    }
-    const cur = state.currentId;
-    let idx = state.queue.indexOf(cur);
-    if(idx<0) idx = 0;
-
-    let nextId = null;
-    if(state.shuffle){
-      if(state.queue.length===1) nextId = state.queue[0];
-      else{
-        let j = idx;
-        while(j===idx) j = Math.floor(Math.random()*state.queue.length);
-        nextId = state.queue[j];
-      }
-    }else{
-      nextId = state.queue[(idx+1) % state.queue.length];
-    }
-
-    if(nextId) playTrack(nextId);
-  }
-
-  function prevTrack(){
-    if(!state.queue.length) return;
-    const cur = state.currentId;
-    let idx = state.queue.indexOf(cur);
-    if(idx<0) idx = 0;
-
-    let prevId = null;
-    if(state.shuffle){
-      prevId = state.queue[Math.floor(Math.random()*state.queue.length)];
-    }else{
-      prevId = state.queue[(idx-1+state.queue.length) % state.queue.length];
-    }
-    if(prevId) playTrack(prevId);
-  }
-
-  function toggleFav(id){
-    const tr = getTrack(id);
-    if(!tr) return;
-    tr.fav = !tr.fav;
-    save();
-    render();
-  }
-
-  function openAssignCategory(id){
-    const tr = getTrack(id);
-    if(!tr) return;
-    openModal({
-      title: t().assignCategoryTitle,
-      body: () => {
-        const wrap = document.createElement("div");
-        wrap.className = "split";
-        const input = document.createElement("input");
-        input.type = "text";
-        input.value = tr.cat || "";
-        input.placeholder = t().addCategoryPH;
-        input.style.padding = "10px 12px";
-        input.style.borderRadius = "14px";
-        input.style.border = "1px solid var(--border2)";
-        input.style.background = "var(--panel2)";
-        input.style.color = "var(--text)";
-        wrap.appendChild(input);
-
-        const tip = document.createElement("div");
-        tip.className = "tSub";
-        tip.textContent = state.lang==="ru"
-          ? "Категория задаётся вручную. Можно написать: phonk, rap, chill, gym и т.д."
-          : "Set category manually. Example: phonk, rap, chill, gym etc.";
-        wrap.appendChild(tip);
-
-        return { wrap, input };
-      },
-      footer: ({close, ctx}) => {
-        addBtn(t().cancel, "btn", close);
-        addBtn(t().ok, "btn primary", () => {
-          const val = (ctx.input.value || "").trim();
-          tr.cat = val;
-          save();
-          close();
-          render();
-        });
-      }
-    });
-  }
-
-  function removeTrack(id){
-    const L = t();
-    if(!confirm(L.confirmRemove)) return;
-
-    // stop if current
-    if(state.currentId === id){
-      audio.pause();
-      audio.src = "";
-      state.currentId = null;
-    }
-
-    // revoke url
-    const url = urlById.get(id);
-    if(url){
-      try{ URL.revokeObjectURL(url); }catch{}
-      urlById.delete(id);
-    }
-
-    // remove from tracks
-    state.tracks = state.tracks.filter(x=>x.id!==id);
-
-    // remove from queue + playlists
-    state.queue = state.queue.filter(x=>x!==id);
-    state.playlists.forEach(p => p.trackIds = p.trackIds.filter(x=>x!==id));
-
-    save();
-    render();
-  }
-
-  // ===== Queue rendering + reorder =====
-  function renderQueue(){
-    const L = t();
-    queueList.innerHTML = "";
-
-    if(!state.queue.length){
-      const div = document.createElement("div");
-      div.className = "tSub";
-      div.style.padding = "8px 2px";
-      div.textContent = state.lang==="ru" ? "Очередь пуста." : "Queue is empty.";
-      queueList.appendChild(div);
-      return;
-    }
-
-    const tip = document.createElement("div");
-    tip.className = "tSub";
-    tip.style.padding = "0 2px 8px";
-    tip.textContent = L.dragTip;
-    queueList.appendChild(tip);
-
-    for(let i=0;i<state.queue.length;i++){
-      const id = state.queue[i];
-      const tr = getTrack(id);
-      if(!tr) continue;
-
-      const el = document.createElement("div");
-      el.className = "qItem";
-      el.setAttribute("draggable","true");
-      el.dataset.idx = String(i);
-      el.dataset.id = id;
-
-      const catText = tr.cat ? tr.cat : L.none;
-      const missing = tr.missing ? `<span class="badge bad">${L.missing}</span>` : `<span class="badge good">OK</span>`;
-
-      el.innerHTML = `
-        <div class="qDrag" title="Drag">⠿</div>
-        <div class="qText">
-          <div class="qName">${escapeHtml(tr.name || L.none)}</div>
-          <div class="qSmall">
-            <span class="badge">${escapeHtml(catText)}</span>
-            ${missing}
+        const head = document.createElement('div');
+        head.className = 'row wrap';
+        head.style.gap = '10px';
+        head.innerHTML = `
+          <button class="btn small" id="plBackBtn">${L.modal.back}</button>
+          <div style="flex:1; min-width:200px">
+            <div class="title">${escapeHtml(pl.name)}</div>
+            <div class="sub">${pl.trackIds.length} track(s)</div>
           </div>
+          <button class="btn small" id="plMoreBtn">⋯</button>
+        `;
+        playlistViewRoot.appendChild(head);
+
+        const hint = document.createElement('div');
+        hint.className = 'hint';
+        hint.style.marginTop = '10px';
+        hint.textContent = L.addFromLibrary;
+        playlistViewRoot.appendChild(hint);
+
+        const list = document.createElement('div');
+        list.className = 'tracks';
+        list.style.marginTop = '10px';
+
+        if(pl.trackIds.length === 0){
+          const empty = document.createElement('div');
+          empty.className = 'hint';
+          empty.textContent = L.playlistTracksEmpty;
+          list.appendChild(empty);
+        } else {
+          for(let i=0;i<pl.trackIds.length;i++){
+            const tid = pl.trackIds[i];
+            const tr = state.library.tracks.find(x=>x.id===tid);
+            if(!tr) continue;
+
+            const row = document.createElement('div');
+            row.className = 'track';
+            row.style.alignItems = 'flex-start';
+
+            const cover = makeCoverEl(tr);
+            const meta = document.createElement('div');
+            meta.className = 'tmeta';
+            meta.innerHTML = `
+              <div class="tname">${escapeHtml(tr.title)}</div>
+              <div class="tauthor">${escapeHtml(tr.artist || L.unknown)}</div>
+              <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
+                ${tr.missing ? `<span class="badge missing">⚠️ ${L.missingBadge}</span>` : ``}
+                ${tr.fav ? `<span class="badge fav">⭐ ${L.favBadge}</span>` : ``}
+              </div>
+            `;
+
+            const actions = document.createElement('div');
+            actions.className = 'actions';
+
+            const up = document.createElement('button');
+            up.className = 'btn icon';
+            up.textContent = '↑';
+            up.disabled = (i===0);
+            up.addEventListener('click', (e) => {
+              e.stopPropagation();
+              if(i===0) return;
+              const tmp = pl.trackIds[i-1];
+              pl.trackIds[i-1] = pl.trackIds[i];
+              pl.trackIds[i] = tmp;
+              persist();
+              renderPlaylists();
+            });
+
+            const down = document.createElement('button');
+            down.className = 'btn icon';
+            down.textContent = '↓';
+            down.disabled = (i===pl.trackIds.length-1);
+            down.addEventListener('click', (e) => {
+              e.stopPropagation();
+              if(i>=pl.trackIds.length-1) return;
+              const tmp = pl.trackIds[i+1];
+              pl.trackIds[i+1] = pl.trackIds[i];
+              pl.trackIds[i] = tmp;
+              persist();
+              renderPlaylists();
+            });
+
+            const play = document.createElement('button');
+            play.className = 'btn icon';
+            play.textContent = '▶️';
+            play.addEventListener('click', (e) => {
+              e.stopPropagation();
+              enqueueAndPlay(tr.id);
+              openSheet();
+            });
+
+            const remove = document.createElement('button');
+            remove.className = 'btn icon';
+            remove.textContent = '−';
+            remove.addEventListener('click', (e) => {
+              e.stopPropagation();
+              pl.trackIds = pl.trackIds.filter(x=>x!==tr.id);
+              persist();
+              renderPlaylists();
+            });
+
+            actions.appendChild(up);
+            actions.appendChild(down);
+            actions.appendChild(play);
+            actions.appendChild(remove);
+
+            row.appendChild(cover);
+            row.appendChild(meta);
+            row.appendChild(actions);
+            row.addEventListener('click', () => enqueueAndPlay(tr.id));
+
+            list.appendChild(row);
+          }
+        }
+
+        playlistViewRoot.appendChild(list);
+
+        $('#plBackBtn').addEventListener('click', () => {
+          playlistView.mode='list';
+          playlistView.currentId=null;
+          renderPlaylists();
+        });
+        $('#plMoreBtn').addEventListener('click', () => openPlaylistActionsModal(pl.id));
+      }
+    }
+
+    // ========= Player / Queue =========
+    function ensureQueueHas(trackId){
+      if(!state.queue.ids.includes(trackId)){
+        state.queue.ids.push(trackId);
+      }
+    }
+
+    function enqueueAndPlay(trackId){
+      const L = t();
+      const tr = state.library.tracks.find(x=>x.id===trackId);
+      if(!tr) return;
+
+      ensureQueueHas(trackId);
+
+      // move index to this track
+      state.queue.index = state.queue.ids.indexOf(trackId);
+
+      persist();
+      playCurrent().catch(()=>{});
+      openSheet();
+    }
+
+    function getCurrentTrack(){
+      const id = state.queue.ids[state.queue.index];
+      if(!id) return null;
+      return state.library.tracks.find(x=>x.id===id) || null;
+    }
+
+    function canPlayTrack(tr){
+      if(!tr) return false;
+      if(tr.missing) return false;
+      const u = urlMap.get(tr.id);
+      return !!u;
+    }
+
+    async function playCurrent(){
+      const L = t();
+      const tr = getCurrentTrack();
+      if(!tr) return;
+
+      if(!canPlayTrack(tr)){
+        showToast(L.toasts.cannotPlayMissing);
+        renderPlayerUI();
+        return;
+      }
+
+      // WebAudio: try to init/resume inside this user gesture call chain
+      ensureWebAudio();
+      await resumeAudioContextIfNeeded();
+
+      audio.src = urlMap.get(tr.id);
+      audio.muted = false; // we control mute via gain for honesty; audio.muted also set for "always works"
+      audio.currentTime = clamp(audio.currentTime || 0, 0, audio.duration || 0);
+
+      // update last played
+      state.settings.lastPlayedId = tr.id;
+      persist();
+
+      try{
+        await audio.play();
+      }catch(e){
+        // iOS may block play without gesture; show hint
+        showToast(isIOS ? 'Tap Play to start (iOS gesture required)' : 'Tap Play');
+      }
+      renderPlayerUI();
+    }
+
+    function pause(){
+      audio.pause();
+      renderPlayerUI();
+    }
+
+    function togglePlay(){
+      if(audio.paused) return playCurrent();
+      pause();
+    }
+
+    function next(){
+      const L = t();
+      if(state.queue.ids.length === 0) return;
+
+      if(state.settings.shuffle){
+        // random next, but avoid repeating same if possible
+        if(state.queue.ids.length === 1){
+          state.queue.index = 0;
+        } else {
+          let tries = 8;
+          let nextIdx = state.queue.index;
+          while(tries-- > 0 && nextIdx === state.queue.index){
+            nextIdx = Math.floor(Math.random() * state.queue.ids.length);
+          }
+          state.queue.index = nextIdx;
+        }
+      } else {
+        state.queue.index++;
+        if(state.queue.index >= state.queue.ids.length){
+          if(state.settings.repeat === 'all'){
+            state.queue.index = 0;
+          } else {
+            state.queue.index = state.queue.ids.length - 1;
+            pause();
+            renderPlayerUI();
+            return;
+          }
+        }
+      }
+      persist();
+      playCurrent().catch(()=>{});
+    }
+
+    function prev(){
+      if(state.queue.ids.length === 0) return;
+      // if more than 3s -> restart track
+      if(audio.currentTime > 3){
+        audio.currentTime = 0;
+        return;
+      }
+      state.queue.index--;
+      if(state.queue.index < 0){
+        state.queue.index = (state.settings.repeat === 'all') ? state.queue.ids.length - 1 : 0;
+      }
+      persist();
+      playCurrent().catch(()=>{});
+    }
+
+    function setRepeat(){
+      // off -> all -> one -> off
+      const cur = state.settings.repeat;
+      state.settings.repeat = (cur === 'off') ? 'all' : (cur === 'all') ? 'one' : 'off';
+      persist();
+      renderPlayerUI();
+    }
+
+    function setShuffle(){
+      state.settings.shuffle = !state.settings.shuffle;
+      persist();
+      renderPlayerUI();
+    }
+
+    // end handling
+    audio.addEventListener('ended', () => {
+      if(state.settings.repeat === 'one'){
+        audio.currentTime = 0;
+        audio.play().catch(()=>{});
+        return;
+      }
+      next();
+    });
+
+    // progress updates
+    let seeking = false;
+    audio.addEventListener('timeupdate', () => {
+      if(seeking) return;
+      const dur = audio.duration || 0;
+      const cur = audio.currentTime || 0;
+      if(dur > 0){
+        seek.value = String(Math.round((cur / dur) * 1000));
+      } else {
+        seek.value = '0';
+      }
+      tCur.textContent = fmtTime(cur);
+      tDur.textContent = fmtTime(dur);
+    });
+    audio.addEventListener('loadedmetadata', () => {
+      const dur = audio.duration || 0;
+      tDur.textContent = fmtTime(dur);
+    });
+
+    seek.addEventListener('input', () => {
+      seeking = true;
+      const dur = audio.duration || 0;
+      const v = Number(seek.value) / 1000;
+      const pos = dur * v;
+      tCur.textContent = fmtTime(pos);
+    });
+    seek.addEventListener('change', () => {
+      const dur = audio.duration || 0;
+      const v = Number(seek.value) / 1000;
+      audio.currentTime = dur * v;
+      seeking = false;
+    });
+
+    // transport buttons
+    playBtn.addEventListener('click', () => togglePlay());
+    miniPlayBtn.addEventListener('click', (e) => { e.stopPropagation(); togglePlay(); });
+    nextBtn.addEventListener('click', () => next());
+    miniNextBtn.addEventListener('click', (e) => { e.stopPropagation(); next(); });
+    prevBtn.addEventListener('click', () => prev());
+
+    shuffleBtn.addEventListener('click', () => setShuffle());
+    repeatBtn.addEventListener('click', () => setRepeat());
+
+    favBtn.addEventListener('click', () => {
+      const tr = getCurrentTrack();
+      if(!tr) return;
+      tr.fav = !tr.fav;
+      persist();
+      renderAll();
+    });
+
+    queueToggleBtn.addEventListener('click', () => {
+      const showing = queuePanel.style.display !== 'none';
+      queuePanel.style.display = showing ? 'none' : 'block';
+      renderQueue();
+    });
+
+    clearQueueBtn.addEventListener('click', () => {
+      state.queue.ids = [];
+      state.queue.index = -1;
+      persist();
+      renderAll();
+    });
+
+    // queue reorder + jump
+    function renderQueue(){
+      const L = t();
+      queueList.innerHTML = '';
+      const ids = state.queue.ids;
+
+      if(ids.length === 0){
+        const empty = document.createElement('div');
+        empty.className = 'hint';
+        empty.textContent = '—';
+        queueList.appendChild(empty);
+        return;
+      }
+
+      ids.forEach((id, i) => {
+        const tr = state.library.tracks.find(x=>x.id===id);
+        if(!tr) return;
+
+        const item = document.createElement('div');
+        item.className = 'queueItem';
+        item.style.borderColor = (i === state.queue.index) ? 'rgba(110,231,255,.35)' : 'var(--line)';
+        item.style.background = (i === state.queue.index) ? 'rgba(110,231,255,.10)' : 'rgba(255,255,255,.03)';
+
+        const meta = document.createElement('div');
+        meta.className = 'qmeta';
+        meta.innerHTML = `
+          <div class="qname">${escapeHtml(tr.title)}</div>
+          <div class="qauth">${escapeHtml(tr.artist || L.unknown)}${tr.missing ? ' • ⚠️ '+L.missingBadge : ''}</div>
+        `;
+
+        const btns = document.createElement('div');
+        btns.className = 'qbtns';
+
+        const up = document.createElement('button');
+        up.className = 'btn icon';
+        up.textContent = '↑';
+        up.disabled = (i===0);
+        up.addEventListener('click', () => {
+          if(i===0) return;
+          const tmp = ids[i-1];
+          ids[i-1] = ids[i];
+          ids[i] = tmp;
+          if(state.queue.index === i) state.queue.index = i-1;
+          else if(state.queue.index === i-1) state.queue.index = i;
+          persist();
+          renderQueue();
+        });
+
+        const down = document.createElement('button');
+        down.className = 'btn icon';
+        down.textContent = '↓';
+        down.disabled = (i===ids.length-1);
+        down.addEventListener('click', () => {
+          if(i>=ids.length-1) return;
+          const tmp = ids[i+1];
+          ids[i+1] = ids[i];
+          ids[i] = tmp;
+          if(state.queue.index === i) state.queue.index = i+1;
+          else if(state.queue.index === i+1) state.queue.index = i;
+          persist();
+          renderQueue();
+        });
+
+        const play = document.createElement('button');
+        play.className = 'btn icon';
+        play.textContent = '▶️';
+        play.addEventListener('click', () => {
+          state.queue.index = i;
+          persist();
+          playCurrent().catch(()=>{});
+          renderAll();
+        });
+
+        const del = document.createElement('button');
+        del.className = 'btn icon';
+        del.textContent = '✖️';
+        del.addEventListener('click', () => {
+          const wasCurrent = (i === state.queue.index);
+          ids.splice(i,1);
+          if(ids.length === 0){
+            state.queue.index = -1;
+            audio.pause();
+          } else {
+            if(wasCurrent){
+              state.queue.index = clamp(i, 0, ids.length-1);
+              playCurrent().catch(()=>{});
+            } else if(i < state.queue.index){
+              state.queue.index--;
+            }
+          }
+          persist();
+          renderAll();
+        });
+
+        btns.appendChild(up);
+        btns.appendChild(down);
+        btns.appendChild(play);
+        btns.appendChild(del);
+
+        item.appendChild(meta);
+        item.appendChild(btns);
+
+        item.addEventListener('click', () => {
+          state.queue.index = i;
+          persist();
+          playCurrent().catch(()=>{});
+          renderAll();
+        });
+
+        queueList.appendChild(item);
+      });
+    }
+
+    // ========= Volume / Gain / Mute =========
+    function updateVolumeHint(){
+      const L = t();
+      const parts = [];
+      if(isIOS){
+        parts.push('📱 ' + (state.settings.lang==='ru'
+          ? 'На iPhone системная громкость обычно меняется кнопками телефона.'
+          : 'On iPhone, system volume is usually controlled by hardware buttons.'));
+      }
+      parts.push('🎚️ ' + (state.settings.lang==='ru'
+        ? 'Ползунок здесь — это Gain (усиление) через WebAudio. Это НЕ “системная громкость”.'
+        : 'The slider here is Gain (preamp) via WebAudio. It is NOT system volume.'));
+      parts.push('🔇 ' + (state.settings.lang==='ru'
+        ? 'Mute/Unmute работает всегда.'
+        : 'Mute/Unmute always works.'));
+      volumeHint.innerHTML = parts.join('<br/>');
+    }
+
+    function applyGain(){
+      // Always keep audio.volume at 1 for honesty (system volume is external on iOS)
+      audio.volume = 1;
+      // Mute must always work -> use audio.muted too
+      audio.muted = !!state.settings.muted;
+
+      const g = state.settings.muted ? 0 : state.settings.gain;
+      if(ensureWebAudio() && gainNode){
+        gainNode.gain.value = g;
+      }
+      updateMuteUI();
+    }
+
+    function updateMuteUI(){
+      const L = t();
+      const label = state.settings.muted ? L.unmute : L.mute;
+      muteBtn.innerHTML = (state.settings.muted ? '🔈 ' : '🔇 ') + `<span id="muteTxt">${label}</span>`;
+    }
+
+    muteBtn.addEventListener('click', async () => {
+      // user gesture: can resume ctx
+      ensureWebAudio();
+      await resumeAudioContextIfNeeded();
+
+      state.settings.muted = !state.settings.muted;
+      persist();
+      applyGain();
+      renderPlayerUI();
+    });
+
+    gain.addEventListener('input', async () => {
+      ensureWebAudio();
+      await resumeAudioContextIfNeeded();
+
+      const v = Number(gain.value);
+      // 0..200% => 0..2.0
+      state.settings.gain = clamp(v / 100, 0, 2);
+      persist();
+      applyGain();
+      renderPlayerUI();
+    });
+
+    // ========= Track actions modal =========
+    function openTrackActionsModal(trackId){
+      const L = t();
+      const tr = state.library.tracks.find(x=>x.id===trackId);
+      if(!tr) return;
+
+      const wrap = document.createElement('div');
+      wrap.innerHTML = `
+        <div class="muted" style="margin-bottom:10px">
+          <b>${escapeHtml(tr.title)}</b><br/>
+          ${escapeHtml(tr.artist || L.unknown)}
         </div>
-        <div class="qBtns">
-          <button class="btn small" data-act="up">↑</button>
-          <button class="btn small" data-act="down">↓</button>
-          <button class="btn small danger" data-act="rm">✕</button>
+        <div class="grid2">
+          <button class="btn" id="actPlay">▶️ ${L.modal.open}</button>
+          <button class="btn" id="actEdit">✏️ ${L.modal.editInfo}</button>
+          <button class="btn" id="actAdd">➕ ${L.addToPlaylist}</button>
+          <button class="btn" id="actCat">🏷️ ${L.category}</button>
+          <button class="btn" id="actFav">${tr.fav ? '⭐' : '☆'} ${L.favorite}</button>
+          <button class="btn danger" id="actRemove">🗑️ ${L.modal.remove}</button>
+        </div>
+        <div class="muted" style="margin-top:10px">
+          ${tr.missing ? '⚠️ '+L.missingBadge+' — '+(L.lang==='ru'?'нужен Relink.':'Relink required.') : ''}
         </div>
       `;
+      openModal('Track', wrap);
 
-      el.addEventListener("click", (e)=>{
-        const act = e.target?.getAttribute?.("data-act");
-        if(act){
-          e.stopPropagation();
-          if(act==="rm"){
-            state.queue.splice(i,1);
-            save(); renderQueue();
-            return;
-          }
-          if(act==="up"){
-            moveQueue(i, Math.max(0, i-1));
-            return;
-          }
-          if(act==="down"){
-            moveQueue(i, Math.min(state.queue.length-1, i+1));
-            return;
-          }
-        }else{
-          playTrack(id);
-        }
+      $('#actPlay', wrap).addEventListener('click', () => { closeModal(); enqueueAndPlay(trackId); openSheet(); });
+      $('#actEdit', wrap).addEventListener('click', () => { closeModal(); openEditInfoModal(trackId); });
+      $('#actAdd', wrap).addEventListener('click', () => { closeModal(); openAddToPlaylistModal(trackId); });
+      $('#actCat', wrap).addEventListener('click', () => { closeModal(); openAssignCategoryModal(trackId); });
+      $('#actFav', wrap).addEventListener('click', () => {
+        tr.fav = !tr.fav;
+        persist();
+        renderAll();
+        closeModal();
       });
-
-      // drag drop
-      el.addEventListener("dragstart", (e)=>{
-        e.dataTransfer.setData("text/plain", String(i));
-        e.dataTransfer.effectAllowed = "move";
-        el.style.opacity = "0.85";
+      $('#actRemove', wrap).addEventListener('click', () => {
+        removeTrack(trackId);
+        persist();
+        renderAll();
+        closeModal();
       });
-      el.addEventListener("dragend", ()=>{
-        el.style.opacity = "";
-      });
-
-      el.addEventListener("dragover", (e)=>{
-        e.preventDefault();
-        e.dataTransfer.dropEffect = "move";
-      });
-      el.addEventListener("drop", (e)=>{
-        e.preventDefault();
-        const from = Number(e.dataTransfer.getData("text/plain"));
-        const to = Number(el.dataset.idx);
-        if(Number.isFinite(from) && Number.isFinite(to) && from!==to){
-          moveQueue(from, to);
-        }
-      });
-
-      queueList.appendChild(el);
-    }
-  }
-
-  function moveQueue(from, to){
-    if(from<0 || to<0 || from>=state.queue.length || to>=state.queue.length) return;
-    const [x] = state.queue.splice(from,1);
-    state.queue.splice(to,0,x);
-    save();
-    renderQueue();
-    showToast(t().moved);
-  }
-
-  // ===== modal helpers =====
-  function openModal({title, body, footer}){
-    modalTitle.textContent = title;
-    modalBody.innerHTML = "";
-    modalFoot.innerHTML = "";
-
-    const ctx = body();
-    modalBody.appendChild(ctx.wrap);
-
-    footer({ close: closeModal, ctx });
-
-    modalBack.classList.add("show");
-    setTimeout(()=>{
-      // focus first input if exists
-      if(ctx?.input?.focus) ctx.input.focus();
-    }, 0);
-  }
-  function closeModal(){
-    modalBack.classList.remove("show");
-  }
-  function addBtn(text, cls, onClick){
-    const b = document.createElement("button");
-    b.className = cls.includes("btn") ? cls : ("btn " + cls);
-    b.textContent = text;
-    b.addEventListener("click", onClick);
-    modalFoot.appendChild(b);
-  }
-
-  modalClose.addEventListener("click", closeModal);
-  modalBack.addEventListener("click", (e)=>{ if(e.target===modalBack) closeModal(); });
-
-  // ===== import / relink =====
-  function importFiles(files, mode){
-    // mode: "import" adds new tracks; "relink" tries to match existing
-    let fileArr = Array.from(files || []);
-fileArr = fileArr.filter(f => {
-  const n = (f.name || "").toLowerCase();
-  const isAudioByType = (f.type || "").startsWith("audio/");
-  const isAudioByExt = /\.(mp3|m4a|aac|wav|ogg|flac)$/i.test(n);
-  return isAudioByType || isAudioByExt;
-});
-if (!fileArr.length) return;
-    if(!fileArr.length) return;
-
-    // build map from signature to file
-    const sigToFile = new Map();
-    for(const f of fileArr){
-      sigToFile.set(sigKey(makeSig(f)), f);
     }
 
-    if(mode==="relink"){
-      let relinked = 0;
-      for(const tr of state.tracks){
-        if(!tr.sig) continue;
-        const f = sigToFile.get(sigKey(tr.sig));
-        if(f){
-          // create/recreate url
-          const url = URL.createObjectURL(f);
-          const old = urlById.get(tr.id);
-          if(old){ try{ URL.revokeObjectURL(old); }catch{} }
-          urlById.set(tr.id, url);
-          tr.missing = false;
-          relinked++;
+    function removeTrack(trackId){
+      // remove from playlists
+      for(const pid of state.playlists.order){
+        const pl = state.playlists.byId[pid];
+        if(pl) pl.trackIds = pl.trackIds.filter(x=>x!==trackId);
+      }
+      // remove from queue
+      const idx = state.queue.ids.indexOf(trackId);
+      if(idx >= 0){
+        state.queue.ids.splice(idx,1);
+        if(state.queue.index === idx){
+          audio.pause();
+          state.queue.index = clamp(idx, 0, state.queue.ids.length-1);
+        } else if(idx < state.queue.index){
+          state.queue.index--;
         }
       }
-      save();
-      render();
-      showToast(t().relinkToast + (relinked ? ` (${relinked})` : ""));
-      return;
+      // revoke url
+      const old = urlMap.get(trackId);
+      if(old){ try{ URL.revokeObjectURL(old); }catch(e){} urlMap.delete(trackId); }
+      // remove from library
+      state.library.tracks = state.library.tracks.filter(x=>x.id!==trackId);
+      if(state.settings.lastPlayedId === trackId) state.settings.lastPlayedId = null;
     }
 
-    // import mode: create track entries
-    const now = Date.now();
-    let added = 0;
-    for(const f of fileArr){
-      const tr = {
-        id: uid(),
-        name: normalizeName(f.name),
-        addedAt: now + added,
-        fav: false,
-        cat: "",
-        sig: makeSig(f),
-        missing: false
+    // ========= Edit info modal =========
+    editInfoBtn.addEventListener('click', () => {
+      const tr = getCurrentTrack();
+      if(!tr) return;
+      openEditInfoModal(tr.id);
+    });
+
+    function openEditInfoModal(trackId){
+      const L = t();
+      const tr = state.library.tracks.find(x=>x.id===trackId);
+      if(!tr) return;
+
+      const wrap = document.createElement('div');
+      wrap.innerHTML = `
+        <div class="muted" style="margin-bottom:10px">${L.metaSub}</div>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <div>
+            <div class="muted">${L.modal.title}</div>
+            <input class="input" id="mTitle" value="${escapeAttr(tr.title||'')}" />
+          </div>
+          <div>
+            <div class="muted">${L.modal.artist}</div>
+            <input class="input" id="mArtist" value="${escapeAttr(tr.artist||L.unknown)}" />
+          </div>
+          <div>
+            <div class="muted">${L.modal.cover}</div>
+            <div class="row wrap" style="gap:10px">
+              <label class="btn" for="mCover">${L.modal.setCover}</label>
+              <input id="mCover" type="file" accept="image/*" hidden />
+              <button class="btn" id="mClearCover">${L.modal.clearCover}</button>
+            </div>
+            <div class="muted" style="margin-top:8px">${tr.coverDataUrl ? '✅ cover set' : '—'}</div>
+          </div>
+          <div class="row wrap" style="gap:10px; margin-top:6px">
+            <button class="btn primary" id="mSave">${L.modal.save}</button>
+            <button class="btn" id="mCancel">${L.modal.cancel}</button>
+          </div>
+        </div>
+      `;
+      openModal(L.modal.editInfo, wrap);
+
+      $('#mCancel', wrap).addEventListener('click', closeModal);
+      $('#mSave', wrap).addEventListener('click', () => {
+        tr.title = ($('#mTitle', wrap).value || '').trim() || tr.title;
+        tr.artist = ($('#mArtist', wrap).value || '').trim() || L.unknown;
+        persist();
+        renderAll();
+        showToast(L.toasts.updated);
+        closeModal();
+      });
+
+      const coverInput = $('#mCover', wrap);
+      coverInput.addEventListener('change', () => {
+        const f = (coverInput.files && coverInput.files[0]) ? coverInput.files[0] : null;
+        if(!f) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          tr.coverDataUrl = String(reader.result || '');
+          persist();
+          renderAll();
+          showToast(L.toasts.updated);
+        };
+        reader.readAsDataURL(f);
+        coverInput.value = '';
+      });
+
+      $('#mClearCover', wrap).addEventListener('click', () => {
+        tr.coverDataUrl = null;
+        persist();
+        renderAll();
+        showToast(L.toasts.updated);
+        closeModal();
+      });
+    }
+
+    // ========= Add to playlist =========
+    addToPlaylistBtn.addEventListener('click', () => {
+      const tr = getCurrentTrack();
+      if(!tr) return;
+      openAddToPlaylistModal(tr.id);
+    });
+
+    function openAddToPlaylistModal(trackId){
+      const L = t();
+      const tr = state.library.tracks.find(x=>x.id===trackId);
+      if(!tr) return;
+
+      const wrap = document.createElement('div');
+      const list = document.createElement('div');
+      list.style.display = 'flex';
+      list.style.flexDirection = 'column';
+      list.style.gap = '10px';
+
+      if(state.playlists.order.length === 0){
+        const empty = document.createElement('div');
+        empty.className = 'muted';
+        empty.textContent = (state.settings.lang==='ru') ? 'Сначала создай плейлист в вкладке Playlists.' : 'Create a playlist first in Playlists tab.';
+        list.appendChild(empty);
+      } else {
+        for(const pid of state.playlists.order){
+          const pl = state.playlists.byId[pid];
+          if(!pl) continue;
+          const has = pl.trackIds.includes(trackId);
+
+          const row = document.createElement('div');
+          row.className = 'row wrap';
+          row.style.alignItems = 'center';
+          row.style.gap = '10px';
+
+          const left = document.createElement('div');
+          left.style.flex = '1';
+          left.innerHTML = `<div class="title" style="font-size:13px">${escapeHtml(pl.name)}</div>
+                            <div class="sub">${pl.trackIds.length} track(s)</div>`;
+          const btn = document.createElement('button');
+          btn.className = 'btn small ' + (has ? '' : 'primary');
+          btn.textContent = has ? ('− ' + L.modal.remove) : ('+ ' + L.modal.add);
+          btn.addEventListener('click', () => {
+            if(has){
+              pl.trackIds = pl.trackIds.filter(x=>x!==trackId);
+            } else {
+              pl.trackIds.push(trackId);
+            }
+            persist();
+            renderAll();
+            closeModal();
+          });
+
+          row.appendChild(left);
+          row.appendChild(btn);
+          list.appendChild(row);
+        }
+      }
+
+      wrap.appendChild(list);
+
+      const footer = document.createElement('div');
+      footer.style.marginTop = '12px';
+      footer.innerHTML = `<button class="btn" id="plClose">${L.modal.cancel}</button>`;
+      wrap.appendChild(footer);
+
+      openModal(L.modal.pickPlaylist, wrap);
+      $('#plClose', wrap).addEventListener('click', closeModal);
+    }
+
+    // ========= Assign category =========
+    assignCatBtn.addEventListener('click', () => {
+      const tr = getCurrentTrack();
+      if(!tr) return;
+      openAssignCategoryModal(tr.id);
+    });
+
+    function openAssignCategoryModal(trackId){
+      const L = t();
+      const tr = state.library.tracks.find(x=>x.id===trackId);
+      if(!tr) return;
+
+      const wrap = document.createElement('div');
+      wrap.innerHTML = `
+        <div class="muted" style="margin-bottom:10px">${L.modal.assignCategory}</div>
+        <div style="display:flex; flex-direction:column; gap:10px">
+          <input class="input" id="catIn" placeholder="${L.modal.categoryName}" value="${escapeAttr(tr.category||'')}" />
+          <div class="row wrap" style="gap:10px">
+            <button class="btn primary" id="catSave">${L.modal.save}</button>
+            <button class="btn" id="catCancel">${L.modal.cancel}</button>
+          </div>
+        </div>
+      `;
+      openModal(L.modal.assignCategory, wrap);
+
+      $('#catCancel', wrap).addEventListener('click', closeModal);
+      $('#catSave', wrap).addEventListener('click', () => {
+        tr.category = ($('#catIn', wrap).value || '').trim();
+        persist();
+        renderAll();
+        showToast(L.toasts.updated);
+        closeModal();
+      });
+    }
+
+    // ========= Playlist create & actions =========
+    $('#createPlaylistBtn').addEventListener('click', () => openCreatePlaylistModal());
+
+    function openCreatePlaylistModal(){
+      const L = t();
+      const wrap = document.createElement('div');
+      wrap.innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:10px">
+          <div class="muted">${L.modal.playlistName}</div>
+          <input class="input" id="plName" placeholder="${L.modal.playlistName}" />
+          <div class="row wrap" style="gap:10px">
+            <button class="btn primary" id="plCreate">${L.modal.create}</button>
+            <button class="btn" id="plCancel">${L.modal.cancel}</button>
+          </div>
+        </div>
+      `;
+      openModal(L.modal.createPlaylist, wrap);
+
+      $('#plCancel', wrap).addEventListener('click', closeModal);
+      $('#plCreate', wrap).addEventListener('click', () => {
+        const name = ($('#plName', wrap).value || '').trim();
+        if(!name) return;
+        const id = uid();
+        state.playlists.byId[id] = { id, name, trackIds: [] };
+        state.playlists.order.unshift(id);
+        persist();
+        renderPlaylists();
+        showToast(L.toasts.createdPlaylist);
+        closeModal();
+      });
+    }
+
+    function openPlaylistActionsModal(pid){
+      const L = t();
+      const pl = state.playlists.byId[pid];
+      if(!pl) return;
+
+      const wrap = document.createElement('div');
+      wrap.innerHTML = `
+        <div class="muted" style="margin-bottom:10px"><b>${escapeHtml(pl.name)}</b></div>
+        <div style="display:flex; flex-direction:column; gap:10px">
+          <button class="btn" id="plRename">✏️ ${L.modal.rename}</button>
+          <button class="btn danger" id="plDelete">🗑️ ${L.modal.delete}</button>
+          <button class="btn" id="plClose">${L.modal.cancel}</button>
+        </div>
+      `;
+      openModal('Playlist', wrap);
+
+      $('#plClose', wrap).addEventListener('click', closeModal);
+      $('#plRename', wrap).addEventListener('click', () => {
+        closeModal();
+        openRenamePlaylistModal(pid);
+      });
+      $('#plDelete', wrap).addEventListener('click', () => {
+        deletePlaylist(pid);
+        persist();
+        renderPlaylists();
+        closeModal();
+      });
+    }
+
+    function openRenamePlaylistModal(pid){
+      const L = t();
+      const pl = state.playlists.byId[pid];
+      if(!pl) return;
+
+      const wrap = document.createElement('div');
+      wrap.innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:10px">
+          <div class="muted">${L.modal.playlistName}</div>
+          <input class="input" id="plName" value="${escapeAttr(pl.name)}" />
+          <div class="row wrap" style="gap:10px">
+            <button class="btn primary" id="plSave">${L.modal.save}</button>
+            <button class="btn" id="plCancel">${L.modal.cancel}</button>
+          </div>
+        </div>
+      `;
+      openModal(L.modal.rename, wrap);
+
+      $('#plCancel', wrap).addEventListener('click', closeModal);
+      $('#plSave', wrap).addEventListener('click', () => {
+        const name = ($('#plName', wrap).value || '').trim();
+        if(!name) return;
+        pl.name = name;
+        persist();
+        renderPlaylists();
+        closeModal();
+      });
+    }
+
+    function deletePlaylist(pid){
+      delete state.playlists.byId[pid];
+      state.playlists.order = state.playlists.order.filter(x=>x!==pid);
+      if(playlistView.currentId === pid){
+        playlistView.mode='list';
+        playlistView.currentId=null;
+      }
+    }
+
+    // ========= Settings =========
+    themeToggle.addEventListener('click', () => {
+      state.settings.theme = (state.settings.theme === 'dark') ? 'light' : 'dark';
+      persist();
+      applyTheme();
+      applyTexts();
+    });
+
+    langToggle.addEventListener('click', () => {
+      state.settings.lang = (state.settings.lang === 'ru') ? 'en' : 'ru';
+      persist();
+      applyTexts();
+      renderAll();
+    });
+
+    clearDataBtn.addEventListener('click', () => {
+      const L = t();
+      // clear all + revoke urls
+      revokeAllUrls();
+      state = {
+        settings: {
+          theme: state.settings.theme,
+          lang: state.settings.lang,
+          lastPlayedId: null,
+          shuffle: false,
+          repeat: 'off',
+          muted: false,
+          gain: 1.0
+        },
+        library: { tracks: [] },
+        playlists: { byId: {}, order: [] },
+        queue: { ids: [], index: -1 }
       };
-      state.tracks.push(tr);
-
-      const url = URL.createObjectURL(f);
-      urlById.set(tr.id, url);
-
-      added++;
-    }
-
-    // If nothing currently playing, pick first added
-    if(!state.currentId && state.tracks.length){
-      state.currentId = state.tracks[0].id;
-    }
-
-    save();
-    render();
-    showToast(t().importToast + (added ? ` (+${added})` : ""));
-  }
-
-  btnImport.addEventListener("click", ()=> fileInput.click());
-  fileInput.addEventListener("change", ()=>{
-    importFiles(fileInput.files, "import");
-    fileInput.value = "";
-  });
-
-  btnRelink.addEventListener("click", ()=>{
-    alert(t().relinkTip);
-    fileInput.click();
-    // next change triggers import; we need relink instead:
-    // We'll temporarily swap handler by a flag.
-  });
-
-  // To support "relink" via same input, we use a flag
-  let nextInputMode = "import";
-  btnRelink.addEventListener("click", ()=>{
-    nextInputMode = "relink";
-  });
-  btnImport.addEventListener("click", ()=>{
-    nextInputMode = "import";
-  });
-  fileInput.addEventListener("change", ()=>{
-    importFiles(fileInput.files, nextInputMode);
-    nextInputMode = "import";
-    fileInput.value = "";
-  });
-
-  // ===== playlists =====
-  btnNewPlaylist.addEventListener("click", ()=>{
-    openModal({
-      title: t().addPlaylistTitle,
-      body: ()=>{
-        const wrap = document.createElement("div");
-        wrap.className = "split";
-        const input = document.createElement("input");
-        input.type = "text";
-        input.placeholder = t().addPlaylistPH;
-        input.style.padding = "10px 12px";
-        input.style.borderRadius = "14px";
-        input.style.border = "1px solid var(--border2)";
-        input.style.background = "var(--panel2)";
-        input.style.color = "var(--text)";
-        wrap.appendChild(input);
-        return { wrap, input };
-      },
-      footer: ({close, ctx})=>{
-        addBtn(t().cancel, "btn", close);
-        addBtn(t().ok, "btn primary", ()=>{
-          const name = (ctx.input.value||"").trim();
-          if(!name) return;
-          state.playlists.push({ id: uid(), name, trackIds: [] });
-          save();
-          close();
-          showToast(t().playlistCreated);
-        });
-      }
+      persist();
+      renderAll();
+      showToast(L.toasts.cleared);
     });
-  });
 
-  btnAddToPlaylist.addEventListener("click", ()=>{
-    if(!state.currentId) return;
-    const tr = getTrack(state.currentId);
-    if(!tr) return;
+    function applyTheme(){
+      appEl.setAttribute('data-theme', state.settings.theme);
+      // theme-color
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if(meta) meta.setAttribute('content', state.settings.theme === 'dark' ? '#0b0b0f' : '#f6f6fb');
+    }
 
-    openModal({
-      title: t().pickPlaylistTitle,
-      body: ()=>{
-        const wrap = document.createElement("div");
-        wrap.className = "split";
+    // ========= Mini/Full UI render =========
+    function renderPlayerUI(){
+      const L = t();
+      const tr = getCurrentTrack();
 
-        if(!state.playlists.length){
-          const p = document.createElement("div");
-          p.className = "tSub";
-          p.textContent = state.lang==="ru"
-            ? "Плейлистов пока нет. Создай новый слева."
-            : "No playlists yet. Create one on the left.";
-          wrap.appendChild(p);
-          return { wrap, input: null };
+      // mini visibility
+      miniPlayer.classList.toggle('hidden', !tr);
+
+      if(!tr){
+        miniTitle.textContent = '—';
+        miniArtist.textContent = '—';
+        bigTitle.textContent = '—';
+        bigArtist.textContent = '—';
+        playBtn.textContent = '▶️';
+        miniPlayBtn.textContent = '▶️';
+        return;
+      }
+
+      miniTitle.textContent = tr.title || 'Track';
+      miniArtist.textContent = tr.artist || L.unknown;
+
+      bigTitle.textContent = tr.title || 'Track';
+      bigArtist.textContent = tr.artist || L.unknown;
+
+      // cover
+      setCoverNode(miniCover, tr.coverDataUrl, true);
+      setCoverNode(bigCover, tr.coverDataUrl, false);
+
+      // states
+      shuffleState.textContent = state.settings.shuffle ? 'On' : 'Off';
+      repeatState.textContent = (state.settings.repeat === 'off') ? 'Off' : (state.settings.repeat === 'all') ? 'All' : 'One';
+
+      shuffleBtn.classList.toggle('primary', state.settings.shuffle);
+      repeatBtn.classList.toggle('primary', state.settings.repeat !== 'off');
+
+      favBtn.classList.toggle('primary', !!tr.fav);
+      favBtn.innerHTML = (tr.fav ? '⭐' : '☆') + ' <span id="favTxt">'+L.favorite+'</span>';
+
+      // play buttons
+      const playing = !audio.paused && audio.currentSrc;
+      playBtn.textContent = playing ? '⏸️' : '▶️';
+      miniPlayBtn.textContent = playing ? '⏸️' : '▶️';
+
+      // missing cues
+      const canPlay = canPlayTrack(tr);
+      $('#sheetChip').textContent = canPlay ? 'Player' : 'Missing';
+
+      updateMuteUI();
+      gain.value = String(Math.round(clamp(state.settings.gain,0,2) * 100));
+      applyGain();
+
+      if(queuePanel.style.display !== 'none') renderQueue();
+    }
+
+    function setCoverNode(node, dataUrl, small){
+      node.innerHTML = '';
+      node.classList.add('cover');
+      if(dataUrl){
+        const img = document.createElement('img');
+        img.src = dataUrl;
+        img.alt = '';
+        node.appendChild(img);
+      } else {
+        node.innerHTML = `
+          <svg class="note" viewBox="0 0 24 24" fill="none" aria-hidden="true" style="${small ? 'width:22px;height:22px' : 'width:46px;height:46px'};opacity:.9">
+            <path d="M9 18a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="currentColor" stroke-width="2"/>
+            <path d="M12 15V5l9-2v10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path d="M18 19a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="currentColor" stroke-width="2"/>
+          </svg>
+        `;
+      }
+    }
+
+    function updateNowChip(){
+      const L = t();
+      nowChip.textContent = L.nowChip(state.library.tracks.length);
+    }
+
+    // ========= Persist =========
+    function persist(){
+      // Never store objectURLs. Tracks keep "missing" as true unless relinked in this session.
+      // On reload: all tracks become missing.
+      const snapshot = structuredCloneSafe(state);
+      // force missing on save? NO (keep session info), but on load we will set missing=true.
+      save(snapshot);
+    }
+
+    function structuredCloneSafe(obj){
+      try { return structuredClone(obj); }
+      catch(e) { return JSON.parse(JSON.stringify(obj)); }
+    }
+
+    // ========= Initial load =========
+    function hydrate(){
+      const saved = load();
+      if(saved){
+        // Merge defaults to handle older versions
+        state.settings = Object.assign({}, state.settings, saved.settings || {});
+        state.library = Object.assign({}, state.library, saved.library || {});
+        state.playlists = Object.assign({}, state.playlists, saved.playlists || {});
+        state.queue = Object.assign({}, state.queue, saved.queue || {});
+
+        // After reload, all file links are gone -> mark tracks missing
+        if(state.library && Array.isArray(state.library.tracks)){
+          state.library.tracks.forEach(tr => { tr.missing = true; });
+        } else {
+          state.library = { tracks: [] };
         }
+        // queue might reference tracks that no longer exist
+        state.queue.ids = (state.queue.ids || []).filter(id => state.library.tracks.some(tr=>tr.id===id));
+        if(state.queue.ids.length === 0) state.queue.index = -1;
+        state.queue.index = clamp(state.queue.index ?? -1, -1, state.queue.ids.length-1);
+      }
 
-        const select = document.createElement("select");
-        select.style.padding = "10px 12px";
-        select.style.borderRadius = "14px";
-        select.style.border = "1px solid var(--border2)";
-        select.style.background = "var(--panel2)";
-        select.style.color = "var(--text)";
-        for(const p of state.playlists){
-          const opt = document.createElement("option");
-          opt.value = p.id;
-          opt.textContent = p.name;
-          select.appendChild(opt);
+      applyTheme();
+      applyTexts();
+      renderAll();
+
+      // If had last played, put it into queue top so mini-player appears (still missing until relink)
+      if(state.settings.lastPlayedId && state.library.tracks.some(tr=>tr.id===state.settings.lastPlayedId)){
+        if(!state.queue.ids.includes(state.settings.lastPlayedId)){
+          state.queue.ids.unshift(state.settings.lastPlayedId);
         }
-        wrap.appendChild(select);
-        return { wrap, input: select };
-      },
-      footer: ({close, ctx})=>{
-        addBtn(t().cancel, "btn", close);
-        addBtn(t().ok, "btn primary", ()=>{
-          if(!ctx.input) return close();
-          const pid = ctx.input.value;
-          const pl = state.playlists.find(p=>p.id===pid);
-          if(!pl) return;
-          if(!pl.trackIds.includes(tr.id)) pl.trackIds.push(tr.id);
-          save();
-          close();
-          showToast("OK");
-        });
+        state.queue.index = state.queue.ids.indexOf(state.settings.lastPlayedId);
+      }
+
+      renderAll();
+
+      if(state.library.tracks.some(x=>x.missing) && state.library.tracks.length > 0){
+        showToast(t().toasts.needRelink);
+      }
+    }
+
+    function renderAll(){
+      renderLibrary();
+      renderPlaylists();
+      renderPlayerUI();
+      updateNowChip();
+    }
+
+    // ========= Escapes =========
+    function escapeHtml(s){
+      s = String(s ?? '');
+      return s.replace(/[&<>"']/g, (c) => ({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+      }[c]));
+    }
+    function escapeAttr(s){
+      return escapeHtml(s).replace(/"/g,'&quot;');
+    }
+
+    // ========= Track-level actions buttons =========
+    function syncCurrentTrackIfNeeded(){
+      const tr = getCurrentTrack();
+      if(!tr) return null;
+      return tr;
+    }
+
+    // Assign current track actions
+    function ensureCurrentPlayableOrWarn(){
+      const L = t();
+      const tr = getCurrentTrack();
+      if(!tr) return false;
+      if(!canPlayTrack(tr)){
+        showToast(L.toasts.cannotPlayMissing);
+        return false;
+      }
+      return true;
+    }
+
+    // Open actions from full player (current track)
+    bigCover.addEventListener('click', () => {
+      const tr = getCurrentTrack();
+      if(!tr) return;
+      // quick toggle queue panel
+      queuePanel.style.display = (queuePanel.style.display === 'none') ? 'block' : 'none';
+      renderQueue();
+    });
+
+    // Clicking big title opens actions
+    bigTitle.addEventListener('click', () => {
+      const tr = getCurrentTrack();
+      if(!tr) return;
+      openTrackActionsModal(tr.id);
+    });
+
+    // ========= Relink shortcut: if play pressed but missing =========
+    playBtn.addEventListener('click', () => {
+      const tr = getCurrentTrack();
+      if(tr && tr.missing){
+        // show relink modal but still let them try play (it will toast)
+        openRelinkModal();
       }
     });
-  });
 
-  // ===== categories =====
-  btnNewCategory.addEventListener("click", ()=>{
-    openModal({
-      title: t().addCategoryTitle,
-      body: ()=>{
-        const wrap = document.createElement("div");
-        wrap.className = "split";
-        const input = document.createElement("input");
-        input.type = "text";
-        input.placeholder = t().addCategoryPH;
-        input.style.padding = "10px 12px";
-        input.style.borderRadius = "14px";
-        input.style.border = "1px solid var(--border2)";
-        input.style.background = "var(--panel2)";
-        input.style.color = "var(--text)";
-        wrap.appendChild(input);
-
-        const tip = document.createElement("div");
-        tip.className = "tSub";
-        tip.textContent = state.lang==="ru"
-          ? "Категория появится в фильтре, когда хотя бы одному треку её назначишь."
-          : "Category appears in filter once assigned to at least one track.";
-        wrap.appendChild(tip);
-
-        return { wrap, input };
-      },
-      footer: ({close, ctx})=>{
-        addBtn(t().cancel, "btn", close);
-        addBtn(t().ok, "btn primary", ()=>{
-          const name = (ctx.input.value||"").trim();
-          if(!name) return;
-          // Not storing categories separately (simpler, robust): they appear when assigned.
-          close();
-          showToast(t().categoryCreated + ": " + name);
-        });
-      }
-    });
-  });
-
-  btnAssignCat.addEventListener("click", ()=>{
-    if(!state.currentId) return;
-    openAssignCategory(state.currentId);
-  });
-
-  // ===== queue utilities =====
-  btnQueueClear.addEventListener("click", ()=>{
-    if(!state.queue.length) return;
-    if(!confirm(t().confirmQueueClear)) return;
-    state.queue = [];
-    save();
-    renderQueue();
-  });
-
-  btnQueueFromFiltered.addEventListener("click", ()=>{
-    const list = filteredTracks().map(x=>x.id);
-    state.queue = list;
-    if(!state.currentId && list.length) state.currentId = list[0];
-    save();
-    renderQueue();
-    showToast(t().queueFromListToast);
-  });
-
-  // ===== clear library =====
-  btnClear.addEventListener("click", ()=>{
-    if(!confirm(t().confirmClear)) return;
-
-    audio.pause();
-    audio.src = "";
-    state.currentId = null;
-
-    // revoke urls
-    for(const [id,url] of urlById.entries()){
-      try{ URL.revokeObjectURL(url); }catch{}
-      urlById.delete(id);
+    // ========= Prevent “fake volume” =========
+    function initVolumeUI(){
+      // Gain slider is the real control we offer
+      gain.value = String(Math.round(clamp(state.settings.gain,0,2) * 100));
+      updateVolumeHint();
+      applyGain();
     }
 
-    state.tracks = [];
-    state.queue = [];
-    // keep playlists but remove track refs
-    state.playlists.forEach(p => p.trackIds = []);
-    save();
-    render();
-  });
+    // ========= Kickstart WebAudio on first user interaction =========
+    const prime = async () => {
+      ensureWebAudio();
+      await resumeAudioContextIfNeeded();
+      window.removeEventListener('touchstart', prime, {passive:true});
+      window.removeEventListener('click', prime);
+      applyGain();
+    };
+    window.addEventListener('touchstart', prime, {passive:true, once:true});
+    window.addEventListener('click', prime, {once:true});
 
-  // ===== playback events =====
-  btnPlay.addEventListener("click", togglePlay);
-  btnPrev.addEventListener("click", prevTrack);
-  btnNext.addEventListener("click", nextTrack);
+    // ========= Init =========
+    hydrate();
+    initVolumeUI();
 
-  btnShuffle.addEventListener("click", ()=>{
-    state.shuffle = !state.shuffle;
-    save();
-    render();
-  });
-
-  btnRepeat.addEventListener("click", ()=>{
-    const order = ["off","all","one"];
-    const i = order.indexOf(state.repeat);
-    state.repeat = order[(i+1)%order.length];
-    save();
-    render();
-  });
-
-  audio.addEventListener("timeupdate", ()=>{
-    if(!isFinite(audio.duration) || audio.duration<=0) return;
-    const p = audio.currentTime / audio.duration;
-    seek.value = String(Math.floor(p*1000));
-    timeCur.textContent = formatTime(audio.currentTime);
-    timeDur.textContent = formatTime(audio.duration);
-  });
-
-  seek.addEventListener("input", ()=>{
-    if(!isFinite(audio.duration) || audio.duration<=0) return;
-    const p = Number(seek.value)/1000;
-    audio.currentTime = p * audio.duration;
-  });
-
-  vol.addEventListener("input", ()=>{
-    state.volume = Number(vol.value);
-    audio.volume = state.volume;
-    save();
-  });
-
-  btnMute.addEventListener("click", ()=>{
-    state.muted = !state.muted;
-    audio.muted = state.muted;
-    btnMute.textContent = state.muted ? "🔇" : "🔊";
-    save();
-  });
-
-  audio.addEventListener("play", ()=>{
-    btnPlay.textContent = "⏸";
-    setNowPlayingUI();
-  });
-  audio.addEventListener("pause", ()=>{
-    btnPlay.textContent = "▶️";
-    setNowPlayingUI();
-  });
-
-  audio.addEventListener("ended", ()=>{
-    if(state.repeat==="one"){
-      audio.currentTime = 0;
-      audio.play().catch(()=>{});
-      return;
-    }
-    if(state.repeat==="all"){
-      nextTrack();
-      return;
-    }
-    // off
-    const cur = state.currentId;
-    const idx = state.queue.indexOf(cur);
-    if(idx>=0 && idx < state.queue.length-1){
-      playTrack(state.queue[idx+1]);
-    }else{
-      // stop at end
-      btnPlay.textContent = "▶️";
-      setNowPlayingUI();
-    }
-  });
-
-  // ===== hotkeys =====
-  window.addEventListener("keydown", (e)=>{
-    const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : "";
-    if(tag==="input" || tag==="select" || tag==="textarea") return;
-
-    if(e.code==="Space"){
-      e.preventDefault();
-      togglePlay();
-    }
-    if(e.key==="ArrowRight"){
-      e.preventDefault();
-      audio.currentTime = Math.min((audio.currentTime||0) + 5, audio.duration || Infinity);
-    }
-    if(e.key==="ArrowLeft"){
-      e.preventDefault();
-      audio.currentTime = Math.max((audio.currentTime||0) - 5, 0);
-    }
-    if(e.key==="ArrowUp"){
-      e.preventDefault();
-      state.volume = Math.min(1, state.volume + 0.05);
-      audio.volume = state.volume;
-      vol.value = String(state.volume);
-      save();
-    }
-    if(e.key==="ArrowDown"){
-      e.preventDefault();
-      state.volume = Math.max(0, state.volume - 0.05);
-      audio.volume = state.volume;
-      vol.value = String(state.volume);
-      save();
-    }
-    if(e.key.toLowerCase()==="n"){ nextTrack(); }
-    if(e.key.toLowerCase()==="p"){ prevTrack(); }
-  });
-
-  // ===== now panel buttons =====
-  btnFav.addEventListener("click", ()=>{
-    if(!state.currentId) return;
-    toggleFav(state.currentId);
-  });
-
-  // ===== filters re-render =====
-  [search, sort, filter, category].forEach(el=>{
-    el.addEventListener("input", render);
-    el.addEventListener("change", render);
-  });
-
-  // ===== theme + language =====
-  btnTheme.addEventListener("click", ()=>{
-    setTheme(state.theme==="dark" ? "light" : "dark");
-  });
-
-  btnLang.addEventListener("click", ()=>{
-    state.lang = (state.lang==="ru") ? "en" : "ru";
-    save();
-    applyLang();
-  });
-
-  // ===== init =====
-  load();
-  setTheme(state.theme);
-  applyLang();
-
-  audio.volume = state.volume;
-  audio.muted = state.muted;
-  vol.value = String(state.volume);
-  btnMute.textContent = state.muted ? "🔇" : "🔊";
-
-  // After reload, show current track meta (but missing)
-  if(state.currentId){
-    const tr = getTrack(state.currentId);
-    if(tr){
-      nowTitle.textContent = tr.name || t().none;
-      nowCat.textContent = tr.cat || t().none;
-      nowStatus.textContent = t().missing;
-      nowStatus.className = "badge bad";
-    }
-  }
-})();
-</script>
+  })();
+  </script>
 </body>
 </html>
